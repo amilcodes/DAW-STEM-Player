@@ -26,7 +26,6 @@ final class AppState: ObservableObject {
     @Published var isTrackpadArmed = false
     @Published var isPatternRecording = false
     @Published var isPatternEnabled = true
-    @Published var isInspectorVisible = true
     @Published var isImporting = false
     @Published var exportProgress: Double?
     @Published var notice: String?
@@ -63,8 +62,10 @@ final class AppState: ObservableObject {
         patternTimer = Timer.scheduledTimer(withTimeInterval: 0.012, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.pollPattern() }
         }
-        reloadAudio()
-        analyzeAllWaveforms()
+        if ProcessInfo.processInfo.environment["SP4_RENDERING_PREVIEW"] != "1" {
+            reloadAudio()
+            analyzeAllWaveforms()
+        }
     }
 
     deinit {
@@ -392,9 +393,31 @@ final class AppState: ObservableObject {
     }
 
     func hasStep(_ step: Int, padIndex: Int, divisions: Int = 16) -> Bool {
+        stepVelocity(step, padIndex: padIndex, divisions: divisions) != nil
+    }
+
+    func stepVelocity(_ step: Int, padIndex: Int, divisions: Int = 16) -> Float? {
         let beat = Double(selectedPatternBar * 4) + Double(step) / Double(divisions) * 4
         let tolerance = 2 / Double(divisions)
-        return project.pattern.events.contains { $0.padIndex == padIndex && abs($0.beat - beat) < tolerance }
+        return project.pattern.events.first {
+            $0.padIndex == padIndex && abs($0.beat - beat) < tolerance
+        }?.velocity
+    }
+
+    func setStepVelocity(_ step: Int, padIndex: Int, velocity: Float, divisions: Int = 16) {
+        let beat = Double(selectedPatternBar * 4) + Double(step) / Double(divisions) * 4
+        let tolerance = 2 / Double(divisions)
+        if let index = project.pattern.events.firstIndex(where: {
+            $0.padIndex == padIndex && abs($0.beat - beat) < tolerance
+        }) {
+            project.pattern.events[index].velocity = max(0.1, min(1, velocity))
+        } else {
+            project.pattern.events.append(
+                PatternEvent(padIndex: padIndex, beat: beat, velocity: max(0.1, min(1, velocity)))
+            )
+            project.pattern.events.sort { $0.beat < $1.beat }
+        }
+        scheduleAutosave()
     }
 
     func clearPattern() {
@@ -422,6 +445,11 @@ final class AppState: ObservableObject {
 
     func trackpadTouchMoved(_ touch: TrackpadTouch) {
         guard let index = trackpadTouches.firstIndex(where: { $0.id == touch.id }) else { return }
+        let previousPad = trackpadTouches[index].padIndex
+        if previousPad != touch.padIndex {
+            releasePad(index: previousPad)
+            triggerPad(index: touch.padIndex, hold: true)
+        }
         trackpadTouches[index] = touch
     }
 
