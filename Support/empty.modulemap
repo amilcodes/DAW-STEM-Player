@@ -1,3 +1,2 @@
 // Intentionally empty. Used by the build's VFS overlay to hide a stale
 // module.modulemap left behind by some upgraded Command Line Tools installs.
-
