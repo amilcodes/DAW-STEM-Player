@@ -79,3 +79,5 @@ Song.stemproject/
 ## Build output
 
 `Scripts/build-app.sh` compiles the Swift sources and Rust helper, renders the icon with AppKit, creates a standard app bundle, and signs it locally. Generated output stays under `.direct-build`, `Helpers/stem-worker/target`, and `dist`; all three are ignored by Git.
+
+`Scripts/render-previews.sh` uses the real SwiftUI surfaces with deterministic preview data to render the Mix, Pads, and Pattern images in `docs/images`. Native menus and the audio graph are disabled only inside that offscreen renderer.

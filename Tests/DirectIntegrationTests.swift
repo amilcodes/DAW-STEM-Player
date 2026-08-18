@@ -14,10 +14,14 @@ struct DirectIntegrationTests {
         let toneURL = try makeTone(in: temporaryRoot)
         try testAudioUtilities(with: toneURL)
         try testProjectStore(in: temporaryRoot, asset: toneURL)
-        try await testRealtimeEngine(source: toneURL)
-        try await testOfflineMix(in: temporaryRoot, source: toneURL)
+        let skipsAudioEngine = ProcessInfo.processInfo.environment["SP4_SKIP_AUDIO_ENGINE"] == "1"
+        if !skipsAudioEngine {
+            try await testRealtimeEngine(source: toneURL)
+            try await testOfflineMix(in: temporaryRoot, source: toneURL)
+        }
 
-        print("PASS: model, project package, generated kit, waveform analysis, import probe, realtime engine, and offline export")
+        let engineResult = skipsAudioEngine ? "audio engine checks skipped by environment" : "realtime engine and offline export"
+        print("PASS: model, project package, generated kit, waveform analysis, import probe, and \(engineResult)")
     }
 
     private static func testModel() throws {

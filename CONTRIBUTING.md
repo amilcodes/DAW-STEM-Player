@@ -21,7 +21,13 @@ For interface changes, check all three workspaces at the minimum window size:
 - Pads with trackpad mode on and off
 - Pattern with one and several bars
 
-Also verify the empty state, file drop state, keyboard reference, settings, and parameter bay.
+Also verify the empty state, file drop state, session menu, keyboard reference, and settings.
+
+Regenerate and inspect the product images before committing an interface change:
+
+```sh
+make previews
+```
 
 ## Commit messages
 

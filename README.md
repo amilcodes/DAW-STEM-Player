@@ -4,7 +4,7 @@
 
 # Stem Player for macOS
 
-A native macOS app for playing, separating, mixing, looping, and exporting song stems. It also turns a MacBook trackpad or Magic Trackpad into a 4 × 3 multitouch drum pad.
+A compact native macOS instrument for playing, separating, mixing, looping, sequencing, and exporting song stems. A MacBook trackpad or Magic Trackpad becomes a 4 × 3 multitouch drum surface.
 
 ![Four-channel stem mixer](docs/images/mix.png)
 
@@ -12,12 +12,13 @@ A native macOS app for playing, separating, mixing, looping, and exporting song 
 
 - Import one song or several prepared stems.
 - Play up to four main stems in sync: drums, vocals, other, and bass.
-- Control level, pan, tone, mute, and solo for each stem.
+- Control level, pan, tone, mute, and solo directly on each channel strip.
 - Seek on the waveform and set loop points.
 - Separate a song locally with a Core ML model.
 - Play twelve drum pads with the mouse, keyboard, or simultaneous trackpad touches.
+- Retrigger pads by sliding between trackpad cells while other fingers keep playing.
 - Load custom pad samples.
-- Record and edit a 16-step drum pattern with tempo, bar, and swing controls.
+- Record and edit a 16-step drum pattern with three voice banks, four velocity levels, tempo, bars, and swing.
 - Export the stem mix and drum pattern as a 32-bit float WAV file.
 - Save portable `.stemproject` packages with copied audio and a versioned JSON manifest.
 
@@ -56,9 +57,15 @@ open "dist/Stem Player.app"
 
 The finished app is written to `dist/Stem Player.app`.
 
+Regenerate the three README screenshots after an interface change:
+
+```sh
+make previews
+```
+
 ## Import audio
 
-Use **+ Audio**, drag files onto the window, or open an audio file with Stem Player from Finder.
+Press **Load**, use the session menu beside the product name, drag files onto the window, or open an audio file with Stem Player from Finder.
 
 One imported file is treated as a full mix. Several files are treated as prepared stems, and their roles are inferred from filenames such as `drums.wav`, `vocals.wav`, and `bass.wav`.
 
@@ -66,7 +73,7 @@ AVFoundation handles WAV, AIFF, CAF, MP3, M4A, and other formats supported by ma
 
 ## Separate a song
 
-Import one complete song and press **Separate Song**. The Rust helper runs the Core ML separation model and returns four files:
+Import one complete song and press **Make 4 Stems** in the mixer, or choose **Separate song into four stems** from the session menu. The Rust helper runs the Core ML separation model and returns four files:
 
 - Drums
 - Vocals
@@ -77,9 +84,9 @@ The first run downloads the model. Later runs use the local cache. Source audio 
 
 ## Trackpad drum input
 
-Open **Pads** and press **Trackpad**, or press `T`.
+Move the mode switch to **Drum** and press **Arm Trackpad**, or press `T`.
 
-The pad surface listens to native `NSTouch` events. Each simultaneous contact is mapped to one of twelve screen cells. The initial touch position selects the pad and touch pressure is used as velocity when the device reports it.
+The pad surface listens to native `NSTouch` events. Each simultaneous contact is mapped to one of twelve cells. Moving a contact into a new cell releases the old pad and triggers the new one. Each finger is tracked separately.
 
 The pointer must remain over the pad surface while trackpad mode is active. macOS sends raw touch events to the view under the pointer, and system gestures still belong to macOS.
 
@@ -87,6 +94,7 @@ The pointer must remain over the pad surface while trackpad mode is active. macO
 
 | Action | Key |
 |---|---|
+| Stem, Drum, or Sequence mode | `Command-1` / `Command-2` / `Command-3` |
 | Play or pause | `Space` or `K` |
 | Back or forward five seconds | `J` / `L` |
 | Return to start | `Return` |
@@ -132,7 +140,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the audio graph, process bo
 make test
 ```
 
-The test command runs the Rust worker tests and a native Swift integration binary. The Swift checks cover model encoding, project packages, generated drums, waveform analysis, audio probing, real-time playback, and offline export. Run audio tests from a normal logged-in macOS session so Audio Unit components are available.
+The test command runs the Rust worker tests and a native Swift integration binary. The Swift checks cover model encoding, project packages, generated drums, waveform analysis, audio probing, real-time playback, and offline export. Run audio tests from a normal logged-in macOS session so Audio Unit components are available. In a restricted runner without Audio Units, use `SP4_SKIP_AUDIO_ENGINE=1 ./Scripts/test-core.sh` for the non-engine checks.
 
 ## Privacy and distribution
 
@@ -143,6 +151,6 @@ The test command runs the Rust worker tests and a native Swift integration binar
 
 ## Design note
 
-The interface uses the physical Stem Player's four-part control model and the clear labeling, fixed geometry, and limited color systems common to Teenage Engineering instruments. It does not copy product assets or software from either company.
+The interface uses the physical Stem Player's four-part control model and an industrial instrument layout: fixed geometry, direct controls, one shallow display, plain labels, and color reserved for channel identity and state. It does not copy product assets or software from Stem Player or Teenage Engineering.
 
 This is an independent project. It is not affiliated with or endorsed by Kano, Yeezy, or Teenage Engineering.

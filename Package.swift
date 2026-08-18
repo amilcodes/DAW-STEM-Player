@@ -1,10 +1,9 @@
-// swift-tools-version: 6.1
+// swift-tools-version: 5.10
 
 import PackageDescription
 
 let package = Package(
     name: "StemPlayer",
-    defaultLocalization: "en",
     platforms: [
         .macOS(.v14)
     ],
@@ -31,6 +30,5 @@ let package = Package(
             dependencies: ["StemPlayer"],
             path: "Tests/StemPlayerTests"
         )
-    ],
-    swiftLanguageModes: [.v5]
+    ]
 )

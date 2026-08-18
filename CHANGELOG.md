@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.2.0
+
+- Replaced the app-style sidebar, inspector, and tab bar with one compact 1160 × 620 instrument faceplate.
+- Added a three-position Stem, Drum, and Sequence mode switch with Command-1, Command-2, and Command-3 shortcuts.
+- Moved level, pan, tone, mute, solo, reset, sample, choke, and performance controls onto their working surfaces.
+- Split the sequencer into three four-voice banks so all sixteen steps remain large enough to play.
+- Added per-step velocity choices and a live sequencer playhead.
+- Retrigger pads when a trackpad contact crosses into a new cell.
+- Added a deterministic offscreen renderer for the README product screenshots.
+
 ## 2.1.0
 
 - Replaced the Processing prototype with a native SwiftUI and AVAudioEngine application.

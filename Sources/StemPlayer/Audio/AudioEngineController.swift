@@ -27,8 +27,8 @@ final class AudioEngineController: ObservableObject {
     @Published private(set) var outputDeviceName = "System Output"
     @Published var lastError: String?
 
-    private let engine = AVAudioEngine()
-    private let drumBus = AVAudioMixerNode()
+    private lazy var engine = AVAudioEngine()
+    private lazy var drumBus = AVAudioMixerNode()
     private var stemChannels: [UUID: StemChannel] = [:]
     private var orderedStemIDs: [UUID] = []
     private var voices: [DrumVoice] = []
@@ -44,7 +44,9 @@ final class AudioEngineController: ObservableObject {
     private var currentStemModels: [UUID: StemModel] = [:]
 
     init() {
-        configureBaseGraph()
+        if ProcessInfo.processInfo.environment["SP4_RENDERING_PREVIEW"] != "1" {
+            configureBaseGraph()
+        }
         pollTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.pollTransport() }
         }

@@ -1,10 +1,13 @@
-.PHONY: app helper test clean
+.PHONY: app helper previews test clean
 
 app: helper
 	./Scripts/build-app.sh
 
 helper:
 	cargo build --release --manifest-path Helpers/stem-worker/Cargo.toml
+
+previews:
+	./Scripts/render-previews.sh
 
 test:
 	cargo test --release --manifest-path Helpers/stem-worker/Cargo.toml
