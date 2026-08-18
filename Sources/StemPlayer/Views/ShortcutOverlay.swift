@@ -4,52 +4,75 @@ struct ShortcutOverlay: View {
     @EnvironmentObject private var app: AppState
 
     private let commands: [(String, String)] = [
-        ("SPACE / K", "PLAY OR PAUSE"), ("J / L", "BACK OR FORWARD 5 SEC"), ("I / O", "SET LOOP IN OR OUT"),
-        ("1 — 4", "SELECT STEM"), ("M / S", "MUTE OR SOLO SELECTED"), ("↑ / ↓", "LEVEL ±1 DB"),
-        ("T", "ARM TRACKPAD"), ("ESC", "EXIT TRACKPAD MODE"), ("⌘ R", "RECORD PATTERN HITS"), ("⌘ E", "EXPORT MIX")
+        ("⌘1 / ⌘2 / ⌘3", "stem / drum / sequence"),
+        ("Space or K", "play / pause"),
+        ("J / L", "back / forward five seconds"),
+        ("I / O", "set loop in / out"),
+        ("1 — 4", "select a stem"),
+        ("M / S", "mute / solo selected stem"),
+        ("↑ / ↓", "selected stem level"),
+        ("T", "arm the trackpad"),
+        ("Escape", "leave trackpad mode"),
+        ("⌘R", "record pad hits"),
+        ("⌘E", "export mix")
     ]
 
     var body: some View {
         ZStack {
-            Color.instrumentInk.opacity(0.68).ignoresSafeArea().onTapGesture { app.showShortcutOverlay = false }
-            ZStack {
-                Color.instrumentSurface
-                PanelScrews()
-                VStack(alignment: .leading, spacing: 18) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("CONTROL REFERENCE").font(.system(size: 16, weight: .black, design: .monospaced))
-                            Text("EVERY PERFORMANCE CONTROL HAS A PHYSICAL KEY").instrumentLabel()
-                        }
-                        Spacer()
-                        Button("CLOSE ×") { app.showShortcutOverlay = false }.buttonStyle(InstrumentButtonStyle(compact: true))
+            Color.instrumentInk.opacity(0.58).ignoresSafeArea()
+                .onTapGesture { app.showShortcutOverlay = false }
+            VStack(alignment: .leading, spacing: 15) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Keyboard map").font(.system(size: 17, weight: .semibold))
+                        Text("Every performance control stays reachable without the pointer")
+                            .font(.system(size: 9, weight: .regular))
+                            .foregroundStyle(Color.instrumentTextSecondary)
                     }
-                    Rectangle().fill(Color.instrumentInk.opacity(0.45)).frame(height: 1)
-                    HStack(alignment: .top, spacing: 30) {
+                    Spacer()
+                    Button("Close") { app.showShortcutOverlay = false }
+                        .buttonStyle(InstrumentButtonStyle(compact: true))
+                }
+                Rectangle().fill(Color.instrumentLine).frame(height: 1)
+
+                HStack(alignment: .top, spacing: 30) {
+                    VStack(spacing: 7) {
+                        ForEach(commands, id: \.0) { command in
+                            HStack(spacing: 10) {
+                                KeyCap(text: command.0, wide: true)
+                                Text(command.1)
+                                    .font(.system(size: 9, weight: .medium))
+                                Spacer()
+                            }
+                        }
+                    }
+                    .frame(width: 345)
+
+                    VStack(alignment: .leading, spacing: 11) {
+                        Text("Pad layout").font(.system(size: 10, weight: .semibold))
                         VStack(spacing: 7) {
-                            ForEach(commands, id: \.0) { command in
-                                HStack { KeyCap(text: command.0, wide: true); Text(command.1).font(.system(size: 8, weight: .bold, design: .monospaced)); Spacer() }
+                            HStack(spacing: 7) { ForEach(["1", "2", "3", "4"], id: \.self) { KeyCap(text: $0) } }
+                            HStack(spacing: 7) { ForEach(["Q", "W", "E", "R"], id: \.self) { KeyCap(text: $0) } }
+                            HStack(spacing: 7) { ForEach(["A", "S", "D", "F"], id: \.self) { KeyCap(text: $0) } }
+                        }
+                        HStack(spacing: 4) {
+                            ForEach(0..<4, id: \.self) { index in
+                                Rectangle().fill(Color.padColor(index)).frame(width: 23, height: 4)
                             }
                         }
-                        .frame(width: 330)
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("PAD / PHYSICAL POSITION").instrumentLabel()
-                            VStack(spacing: 7) {
-                                HStack(spacing: 7) { ForEach(["1", "2", "3", "4"], id: \.self) { KeyCap(text: $0) } }
-                                HStack(spacing: 7) { ForEach(["Q", "W", "E", "R"], id: \.self) { KeyCap(text: $0) } }
-                                HStack(spacing: 7) { ForEach(["A", "S", "D", "F"], id: \.self) { KeyCap(text: $0) } }
-                            }
-                            HStack(spacing: 5) { ForEach(0..<4, id: \.self) { index in Rectangle().fill(Color.padColor(index)).frame(width: 25, height: 5) } }
-                            Text("THE SAME 4 × 3 GEOMETRY IS USED BY CLICK, KEYBOARD AND TRACKPAD MULTI-TOUCH.")
-                                .font(.system(size: 8, weight: .bold, design: .monospaced)).foregroundStyle(Color.instrumentTextSecondary).lineSpacing(3).frame(width: 175, alignment: .leading)
-                        }
+                        Text("Click, keyboard, and raw trackpad multi-touch all use the same 4 × 3 physical map.")
+                            .font(.system(size: 9, weight: .regular))
+                            .foregroundStyle(Color.instrumentTextSecondary)
+                            .lineSpacing(2)
+                            .frame(width: 180, alignment: .leading)
                     }
                 }
-                .padding(28)
             }
-            .frame(width: 610, height: 430)
-            .overlay(Rectangle().stroke(Color.instrumentInk.opacity(0.82), lineWidth: 1))
-            .shadow(color: .black.opacity(0.38), radius: 0, y: 8)
+            .padding(24)
+            .frame(width: 610, height: 410)
+            .background(Color.instrumentSurface)
+            .overlay(Rectangle().stroke(Color.instrumentLine))
+            .shadow(color: .black.opacity(0.3), radius: 0, y: 6)
         }
     }
 }

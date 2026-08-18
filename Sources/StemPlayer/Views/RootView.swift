@@ -1,5 +1,4 @@
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct RootView: View {
     @EnvironmentObject private var app: AppState
@@ -10,46 +9,49 @@ struct RootView: View {
         ZStack {
             Color.instrumentBackground.ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                topBar
-                Rectangle().fill(Color.instrumentInk.opacity(0.55)).frame(height: 1)
+            VStack(spacing: 11) {
+                topDeck
 
-                HStack(spacing: 0) {
-                    Sidebar(separator: app.separator).frame(width: 232)
-                    Rectangle().fill(Color.instrumentInk.opacity(0.42)).frame(width: 1)
+                if app.project.stems.isEmpty {
+                    IdleDisplay()
+                } else {
+                    WaveformTimeline()
+                }
 
-                    VStack(spacing: 10) {
-                        if !app.project.stems.isEmpty { WaveformTimeline() }
-                        Group {
-                            switch app.mode {
-                            case .mix:
-                                if app.project.stems.isEmpty { EmptyInstrumentView() } else { MixSurface() }
-                            case .pads: PadSurface()
-                            case .pattern: PatternSurface()
-                            }
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    }
-                    .padding(12)
-
-                    if app.isInspectorVisible {
-                        Rectangle().fill(Color.instrumentInk.opacity(0.42)).frame(width: 1)
-                        Inspector().frame(width: 236)
+                Group {
+                    switch app.mode {
+                    case .mix:
+                        app.project.stems.isEmpty ? AnyView(EmptyInstrumentView()) : AnyView(MixSurface())
+                    case .pads:
+                        AnyView(PadSurface())
+                    case .pattern:
+                        AnyView(PatternSurface())
                     }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                transportDeck
             }
+            .padding(.horizontal, 14)
+            .padding(.top, 9)
+            .padding(.bottom, 13)
+            .background(Color.instrumentSurface)
+            .overlay(Rectangle().stroke(Color.instrumentInk.opacity(0.42), lineWidth: 1))
 
             if dropTargeted { dropOverlay }
+            if app.isImporting { WorkingOverlay(label: "Reading audio") }
             if let progress = app.exportProgress { ExportOverlay(progress: progress) }
             if app.showShortcutOverlay { ShortcutOverlay() }
             if let notice = app.notice { noticeView(notice) }
         }
         .foregroundStyle(Color.instrumentInk)
-        .animation(.easeInOut(duration: 0.14), value: app.isInspectorVisible)
         .animation(.easeInOut(duration: 0.12), value: app.showShortcutOverlay)
         .dropDestination(
             for: URL.self,
-            action: { urls, _ in Task { await app.importAudioFiles(urls) }; return !urls.isEmpty },
+            action: { urls, _ in
+                Task { await app.importAudioFiles(urls) }
+                return !urls.isEmpty
+            },
             isTargeted: { dropTargeted = $0 }
         )
         .onOpenURL { url in
@@ -61,7 +63,9 @@ struct RootView: View {
             isPresented: Binding(get: { app.presentedError != nil }, set: { if !$0 { app.presentedError = nil } })
         ) {
             Button("OK") { app.presentedError = nil }
-        } message: { Text(app.presentedError ?? "Unknown error") }
+        } message: {
+            Text(app.presentedError ?? "Unknown error")
+        }
         .onChange(of: app.notice) { _, value in
             guard value != nil else { return }
             Task { @MainActor in
@@ -71,69 +75,201 @@ struct RootView: View {
         }
     }
 
-    private var topBar: some View {
+    private var topDeck: some View {
         ZStack {
-            WindowDragArea()
-            HStack(spacing: 14) {
-                HStack(spacing: 11) {
-                    HStack(spacing: 2) {
-                        ForEach(0..<4, id: \.self) { index in
-                            Rectangle().fill(Color.padColor(index)).frame(width: 4, height: CGFloat(12 + index * 3))
-                        }
-                    }
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("SP–4").font(.system(size: 14, weight: .black, design: .monospaced)).tracking(-0.6)
-                        Text("STEM PERFORMANCE SYSTEM").font(.system(size: 7, weight: .bold, design: .monospaced)).tracking(0.55)
-                    }
+            if ProcessInfo.processInfo.environment["SP4_RENDERING_PREVIEW"] == "1" {
+                Color.clear
+            } else {
+                WindowDragArea()
+            }
+            HStack(spacing: 13) {
+                productMark
+                sessionMenu
+                Spacer(minLength: 10)
+                ModeSelector(selection: $app.mode)
+                Rectangle().fill(Color.instrumentLine).frame(width: 1, height: 36)
+                statusDisplay
+                Button { audio.togglePlayback() } label: {
+                    Image(systemName: audio.isPlaying ? "pause.fill" : "play.fill")
+                        .offset(x: audio.isPlaying ? 0 : 1)
                 }
+                .buttonStyle(CircleTransportButtonStyle(tint: .instrumentOrange, size: 36))
+                .help("Play or pause — Space")
+            }
+            .padding(.leading, 64)
+            .padding(.trailing, 2)
+        }
+        .frame(height: 48)
+    }
 
-                Spacer()
-                ModePicker(selection: $app.mode)
-                Spacer()
+    private var productMark: some View {
+        HStack(spacing: 8) {
+            HStack(alignment: .bottom, spacing: 2) {
+                ForEach(0..<4, id: \.self) { index in
+                    Rectangle()
+                        .fill(Color.padColor(index))
+                        .frame(width: 3.5, height: CGFloat(11 + index * 3))
+                }
+            }
+            VStack(alignment: .leading, spacing: 0) {
+                Text("sp–4")
+                    .font(.system(size: 17, weight: .semibold))
+                    .tracking(-0.7)
+                Text("stem instrument")
+                    .font(.system(size: 8, weight: .medium))
+                    .foregroundStyle(Color.instrumentTextSecondary)
+            }
+        }
+        .frame(width: 108, alignment: .leading)
+    }
 
-                HStack(spacing: 8) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(audio.currentTime.transportString)
-                            .font(.system(size: 12, weight: .bold, design: .monospaced))
-                            .foregroundStyle(Color.instrumentYellow)
-                        Text(app.project.stems.isEmpty ? "NO MEDIA" : (audio.isPlaying ? "RUN" : "STANDBY"))
-                            .font(.system(size: 7, weight: .bold, design: .monospaced))
-                            .foregroundStyle(Color.white.opacity(0.48))
-                    }
-                    .frame(width: 95, alignment: .leading)
-                    .padding(.horizontal, 9)
-                    .frame(height: 34)
-                    .background(Rectangle().fill(Color.instrumentDisplay))
-                    .overlay(Rectangle().stroke(Color.instrumentInk.opacity(0.8), lineWidth: 1))
-
-                    Button { audio.togglePlayback() } label: { Text(audio.isPlaying ? "Ⅱ" : "▶") }
-                        .buttonStyle(CircleTransportButtonStyle(tint: .instrumentOrange, size: 34))
-
-                    if !app.isInspectorVisible {
-                        Button("EDIT") { app.isInspectorVisible = true }
-                            .buttonStyle(InstrumentButtonStyle(compact: true))
+    @ViewBuilder private var sessionMenu: some View {
+        if ProcessInfo.processInfo.environment["SP4_RENDERING_PREVIEW"] == "1" {
+            sessionLabel
+        } else {
+            Menu {
+            Button("Import song or stems…") { app.presentAudioImporter() }
+            Button("Open project…") { app.presentProjectImporter() }
+            Divider()
+            Button("Save project as…") { app.saveProjectAs() }
+            Button("Export mix…") { app.exportMix() }
+                .disabled(app.project.stems.isEmpty)
+            if app.canSeparate {
+                Divider()
+                Button("Separate song into four stems") { app.separateCurrentSong() }
+            }
+            if !app.project.stems.isEmpty {
+                Divider()
+                Menu("Channels") {
+                    ForEach(Array(app.project.stems.enumerated()), id: \.element.id) { index, stem in
+                        Button("\(index + 1)  \(stem.name)") { app.selectStem(stem.id) }
                     }
                 }
             }
-            .padding(.leading, 78)
-            .padding(.trailing, 13)
+            Divider()
+            Button("New session") { app.newSession() }
+            Button("Keyboard map") { app.showShortcutOverlay = true }
+            } label: {
+                sessionLabel
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
         }
-        .frame(height: 58)
-        .background(Color.instrumentSurface)
+    }
+
+    private var sessionLabel: some View {
+        HStack(spacing: 9) {
+            HardwareLED(color: app.project.stems.isEmpty ? .instrumentOrange : .instrumentGreen, isOn: true)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(app.project.title)
+                    .font(.system(size: 10, weight: .semibold))
+                    .lineLimit(1)
+                Text(app.project.stems.isEmpty ? "load audio" : "\(app.project.stems.count) channel\(app.project.stems.count == 1 ? "" : "s")")
+                    .font(.system(size: 7.5, weight: .medium))
+                    .foregroundStyle(Color.instrumentTextSecondary)
+            }
+            Spacer(minLength: 5)
+            Image(systemName: "chevron.down")
+                .font(.system(size: 8, weight: .semibold))
+                .foregroundStyle(Color.instrumentTextSecondary)
+        }
+        .padding(.horizontal, 10)
+        .frame(width: 190, height: 36)
+        .background(Color.instrumentPlate)
+        .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 1))
+    }
+
+    private var statusDisplay: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(audio.currentTime.transportString)
+                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                .foregroundStyle(Color.instrumentYellow)
+            HStack(spacing: 5) {
+                HardwareLED(color: audio.isPlaying ? .instrumentGreen : .instrumentOrange, isOn: true, size: 5)
+                Text(statusText)
+                    .font(.system(size: 7, weight: .medium, design: .monospaced))
+                    .foregroundStyle(Color.white.opacity(0.48))
+            }
+        }
+        .padding(.horizontal, 10)
+        .frame(width: 120, height: 37, alignment: .leading)
+        .background(Color.instrumentDisplay)
+        .overlay(Rectangle().stroke(Color.instrumentInk.opacity(0.62), lineWidth: 1))
+    }
+
+    private var statusText: String {
+        switch app.separator.state {
+        case .preparing: "PREPARING"
+        case .running(let progress, _): "SPLIT \(Int(progress * 100))%"
+        case .failed: "CHECK SPLIT"
+        default:
+            app.project.stems.isEmpty ? "NO MEDIA" : (audio.isPlaying ? "RUN" : app.mode.shortName)
+        }
+    }
+
+    private var transportDeck: some View {
+        HStack(spacing: 8) {
+            Text("TRANSPORT")
+                .font(.system(size: 7, weight: .semibold))
+                .tracking(0.5)
+                .foregroundStyle(Color.instrumentTextSecondary)
+            Button("|◀") { audio.seek(to: 0) }
+                .buttonStyle(InstrumentButtonStyle(compact: true))
+                .help("Return to start — Return")
+            Button("−5") { audio.skip(seconds: -5) }
+                .buttonStyle(InstrumentButtonStyle(compact: true))
+                .help("Back five seconds — J")
+            Button("+5") { audio.skip(seconds: 5) }
+                .buttonStyle(InstrumentButtonStyle(compact: true))
+                .help("Forward five seconds — L")
+            Rectangle().fill(Color.instrumentLine).frame(width: 1, height: 25)
+            Button(app.project.loop.isEnabled ? "Loop on" : "Loop") { app.toggleLoop() }
+                .buttonStyle(InstrumentButtonStyle(accent: .instrumentYellow, isLatched: app.project.loop.isEnabled, compact: true))
+            Button("In") { app.setLoopIn() }.buttonStyle(InstrumentButtonStyle(compact: true))
+            Button("Out") { app.setLoopOut() }.buttonStyle(InstrumentButtonStyle(compact: true))
+
+            Spacer()
+
+            HStack(spacing: 4) {
+                ForEach(0..<4, id: \.self) { index in
+                    HardwareLED(color: Color.padColor(index), isOn: index < app.project.stems.count)
+                }
+            }
+            Text(app.mode.detailName)
+                .font(.system(size: 8, weight: .medium))
+                .foregroundStyle(Color.instrumentTextSecondary)
+            Spacer()
+
+            Button("Keys") { app.showShortcutOverlay = true }
+                .buttonStyle(InstrumentButtonStyle(compact: true))
+            Button("Load") { app.presentAudioImporter() }
+                .buttonStyle(InstrumentButtonStyle(accent: .instrumentOrange, compact: true))
+            Button("Export") { app.exportMix() }
+                .buttonStyle(InstrumentButtonStyle(compact: true))
+                .disabled(app.project.stems.isEmpty)
+        }
+        .padding(.horizontal, 10)
+        .frame(height: 42)
+        .background(Color.instrumentPlate)
+        .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 1))
     }
 
     private var dropOverlay: some View {
         Rectangle()
-            .fill(Color.instrumentSurface.opacity(0.94))
-            .overlay(Rectangle().stroke(Color.instrumentOrange, style: StrokeStyle(lineWidth: 2, dash: [6, 5])).padding(24))
+            .fill(Color.instrumentSurface.opacity(0.96))
+            .overlay(Rectangle().stroke(Color.instrumentOrange, style: StrokeStyle(lineWidth: 2, dash: [5, 5])).padding(18))
             .overlay(
-                VStack(spacing: 10) {
-                    StemGlyph(size: 62)
-                    Text("LOAD AUDIO").font(.system(size: 18, weight: .black, design: .monospaced))
-                    Text("ONE SONG OR MULTIPLE PREPARED STEMS").instrumentLabel()
+                VStack(spacing: 8) {
+                    StemGlyph(size: 64)
+                    Text("Drop audio to load")
+                        .font(.system(size: 17, weight: .semibold))
+                    Text("one song or a set of prepared stems")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(Color.instrumentTextSecondary)
                 }
             )
-            .padding(24)
+            .padding(12)
             .allowsHitTesting(false)
     }
 
@@ -142,30 +278,65 @@ struct RootView: View {
             Spacer()
             HStack(spacing: 8) {
                 HardwareLED(color: .instrumentGreen, isOn: true)
-                Text(notice.uppercased()).font(.system(size: 9, weight: .bold, design: .monospaced))
+                Text(notice)
+                    .font(.system(size: 9, weight: .medium))
             }
-            .padding(.horizontal, 14).frame(height: 34)
-            .background(Rectangle().fill(Color.instrumentRaised).overlay(Rectangle().stroke(Color.instrumentInk.opacity(0.55))))
-            .shadow(color: Color.instrumentInk.opacity(0.28), radius: 0, y: 3)
-            .padding(.bottom, 16)
+            .padding(.horizontal, 13)
+            .frame(height: 32)
+            .background(Color.instrumentRaised)
+            .overlay(Rectangle().stroke(Color.instrumentLine))
+            .shadow(color: Color.instrumentInk.opacity(0.22), radius: 0, y: 2)
+            .padding(.bottom, 12)
         }
         .transition(.move(edge: .bottom).combined(with: .opacity))
         .allowsHitTesting(false)
     }
 }
 
-private struct StemGlyph: View {
+struct StemGlyph: View {
     var size: CGFloat
 
     var body: some View {
         ZStack {
-            Circle().fill(Color.instrumentRaised).overlay(Circle().stroke(Color.instrumentInk.opacity(0.65), lineWidth: 1))
+            Circle().fill(Color.instrumentRaised).overlay(Circle().stroke(Color.instrumentInk.opacity(0.42), lineWidth: 1))
             ForEach(0..<4, id: \.self) { index in
-                Capsule().fill(Color.padColor(index)).frame(width: size * 0.095, height: size * 0.27).offset(y: -size * 0.19).rotationEffect(.degrees(Double(index) * 90))
+                Capsule()
+                    .fill(Color.padColor(index))
+                    .frame(width: size * 0.085, height: size * 0.26)
+                    .offset(y: -size * 0.19)
+                    .rotationEffect(.degrees(Double(index) * 90))
             }
-            Circle().fill(Color.instrumentInk).frame(width: size * 0.25, height: size * 0.25)
+            Circle().fill(Color.instrumentInk).frame(width: size * 0.23, height: size * 0.23)
         }
         .frame(width: size, height: size)
+    }
+}
+
+private struct IdleDisplay: View {
+    var body: some View {
+        HStack(spacing: 12) {
+            HStack(spacing: 3) {
+                ForEach(0..<4, id: \.self) { index in
+                    Capsule().fill(Color.padColor(index).opacity(0.55)).frame(width: 3, height: 26)
+                }
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text("NO SIGNAL")
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundStyle(Color.instrumentYellow)
+                Text("DROP A SONG OR OPEN AUDIO TO BEGIN")
+                    .font(.system(size: 7, weight: .medium, design: .monospaced))
+                    .foregroundStyle(Color.white.opacity(0.4))
+            }
+            Spacer()
+            Text("44.1 kHz  /  32-bit engine")
+                .font(.system(size: 7, weight: .medium, design: .monospaced))
+                .foregroundStyle(Color.white.opacity(0.3))
+        }
+        .padding(.horizontal, 13)
+        .frame(height: 68)
+        .background(Color.instrumentDisplay)
+        .overlay(Rectangle().stroke(Color.instrumentInk.opacity(0.62), lineWidth: 1))
     }
 }
 
@@ -173,31 +344,50 @@ private struct EmptyInstrumentView: View {
     @EnvironmentObject private var app: AppState
 
     var body: some View {
-        ZStack {
-            PanelScrews()
-            HStack(spacing: 54) {
-                StemGlyph(size: 228)
-                VStack(alignment: .leading, spacing: 18) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("LOAD A RECORDING").font(.system(size: 21, weight: .black, design: .monospaced)).tracking(-0.8)
-                        Text("Start with one complete song, or select multiple already-separated files. WAV, AIFF, MP3, M4A, FLAC and most common audio formats are accepted.")
-                            .font(.system(size: 11, weight: .medium, design: .monospaced))
-                            .foregroundStyle(Color.instrumentTextSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(maxWidth: 360, alignment: .leading)
-                    }
-                    HStack(spacing: 9) {
-                        Button("OPEN SONG") { app.presentAudioImporter() }
-                            .buttonStyle(InstrumentButtonStyle(accent: .instrumentOrange, isLatched: true))
-                        Button("OPEN STEMS") { app.presentAudioImporter() }
-                            .buttonStyle(InstrumentButtonStyle())
-                    }
-                    Text("TIP  DRAG FILES ANYWHERE ONTO THE INSTRUMENT").instrumentLabel()
+        HStack(spacing: 34) {
+            StemGlyph(size: 116)
+            VStack(alignment: .leading, spacing: 13) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("Start with audio")
+                        .font(.system(size: 19, weight: .semibold))
+                    Text("Open one complete song or several prepared stems. WAV, AIFF, MP3, M4A, FLAC, and other common formats are accepted.")
+                        .font(.system(size: 10, weight: .regular))
+                        .foregroundStyle(Color.instrumentTextSecondary)
+                        .lineSpacing(2)
+                        .frame(maxWidth: 410, alignment: .leading)
                 }
+                HStack(spacing: 8) {
+                    Button("Load audio") { app.presentAudioImporter() }
+                        .buttonStyle(InstrumentButtonStyle(accent: .instrumentOrange, isLatched: true))
+                    Button("Open project") { app.presentProjectImporter() }
+                        .buttonStyle(InstrumentButtonStyle())
+                }
+                Text("Drag files anywhere onto the instrument")
+                    .font(.system(size: 8, weight: .medium))
+                    .foregroundStyle(Color.instrumentTextSecondary)
             }
-            .padding(46)
         }
-        .instrumentPanel(cornerRadius: 3)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.instrumentPlate.opacity(0.36))
+        .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 1))
+    }
+}
+
+private struct WorkingOverlay: View {
+    var label: String
+
+    var body: some View {
+        ZStack {
+            Color.instrumentInk.opacity(0.42).ignoresSafeArea()
+            HStack(spacing: 10) {
+                ProgressView().controlSize(.small)
+                Text(label).font(.system(size: 10, weight: .medium))
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 40)
+            .background(Color.instrumentRaised)
+            .overlay(Rectangle().stroke(Color.instrumentLine))
+        }
     }
 }
 
@@ -206,17 +396,22 @@ private struct ExportOverlay: View {
 
     var body: some View {
         ZStack {
-            Color.instrumentInk.opacity(0.58).ignoresSafeArea()
-            VStack(alignment: .leading, spacing: 12) {
+            Color.instrumentInk.opacity(0.52).ignoresSafeArea()
+            VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("RENDER MIX").font(.system(size: 13, weight: .black, design: .monospaced))
+                    Text("Rendering mix").font(.system(size: 12, weight: .semibold))
                     Spacer()
-                    Text("\(Int(progress * 100))%").font(.system(size: 13, weight: .bold, design: .monospaced))
+                    Text("\(Int(progress * 100))%")
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
                 }
-                ProgressView(value: progress).progressViewStyle(.linear).tint(.instrumentOrange).frame(width: 310)
-                Text("OFFLINE / FULL QUALITY").instrumentLabel()
+                ProgressView(value: progress).progressViewStyle(.linear).tint(.instrumentOrange).frame(width: 300)
+                Text("offline / full quality")
+                    .font(.system(size: 8, weight: .medium))
+                    .foregroundStyle(Color.instrumentTextSecondary)
             }
-            .padding(22).instrumentPanel(cornerRadius: 2)
+            .padding(18)
+            .background(Color.instrumentRaised)
+            .overlay(Rectangle().stroke(Color.instrumentLine))
         }
     }
 }

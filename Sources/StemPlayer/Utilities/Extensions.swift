@@ -21,12 +21,12 @@ extension Double {
 
 extension Color {
     // A deliberately small, industrial palette. Color communicates function only.
-    static let instrumentBackground = Color(red: 0.70, green: 0.69, blue: 0.64)
-    static let instrumentSurface = Color(red: 0.83, green: 0.81, blue: 0.74)
-    static let instrumentRaised = Color(red: 0.91, green: 0.89, blue: 0.81)
-    static let instrumentPlate = Color(red: 0.76, green: 0.75, blue: 0.69)
-    static let instrumentInk = Color(red: 0.105, green: 0.108, blue: 0.102)
-    static let instrumentDisplay = Color(red: 0.075, green: 0.081, blue: 0.076)
+    static let instrumentBackground = Color(red: 0.64, green: 0.64, blue: 0.61)
+    static let instrumentSurface = Color(red: 0.82, green: 0.81, blue: 0.77)
+    static let instrumentRaised = Color(red: 0.93, green: 0.92, blue: 0.88)
+    static let instrumentPlate = Color(red: 0.75, green: 0.75, blue: 0.71)
+    static let instrumentInk = Color(red: 0.105, green: 0.11, blue: 0.105)
+    static let instrumentDisplay = Color(red: 0.07, green: 0.078, blue: 0.073)
     static let instrumentTextSecondary = Color.instrumentInk.opacity(0.58)
     static let instrumentLine = Color.instrumentInk.opacity(0.28)
     static let instrumentOrange = Color(red: 0.94, green: 0.31, blue: 0.12)
@@ -56,8 +56,8 @@ extension View {
     }
 
     func instrumentLabel() -> some View {
-        self.font(.system(size: 9, weight: .bold, design: .monospaced))
-            .tracking(0.7)
+        self.font(.system(size: 8, weight: .semibold))
+            .tracking(0.45)
             .foregroundStyle(Color.instrumentTextSecondary)
     }
 }

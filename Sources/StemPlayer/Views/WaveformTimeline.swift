@@ -38,7 +38,7 @@ struct WaveformTimeline: View {
                         context.fill(shape, with: .color(stem.role.color.opacity(0.7)))
                     }
                 }
-                .padding(.vertical, 15)
+                .padding(.vertical, 9)
 
                 if app.project.loop.isEnabled {
                     let start = proxy.size.width * app.project.loop.startSeconds / duration
@@ -55,8 +55,8 @@ struct WaveformTimeline: View {
                         Spacer()
                         Text("LEN  \(app.project.durationSeconds.transportString)")
                     }
-                    .font(.system(size: 8, weight: .bold, design: .monospaced)).foregroundStyle(Color.white.opacity(0.52))
-                    .padding(.horizontal, 9).padding(.top, 5)
+                    .font(.system(size: 7, weight: .medium, design: .monospaced)).foregroundStyle(Color.white.opacity(0.44))
+                    .padding(.horizontal, 9).padding(.top, 4)
                     Spacer()
                 }
             }
@@ -67,7 +67,7 @@ struct WaveformTimeline: View {
                 audio.seek(to: ratio * duration)
             })
         }
-        .frame(minHeight: 86, idealHeight: 102, maxHeight: 112)
+        .frame(height: 68)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Song waveform")
         .accessibilityValue("Playhead at \(audio.currentTime.transportString)")

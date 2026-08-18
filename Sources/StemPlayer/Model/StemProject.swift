@@ -232,4 +232,20 @@ enum WorkspaceMode: String, CaseIterable, Identifiable {
         case .pattern: "timeline.selection"
         }
     }
+
+    var shortName: String {
+        switch self {
+        case .mix: "STEM"
+        case .pads: "DRUM"
+        case .pattern: "SEQ"
+        }
+    }
+
+    var detailName: String {
+        switch self {
+        case .mix: "stem mixer"
+        case .pads: "drum matrix"
+        case .pattern: "step sequence"
+        }
+    }
 }

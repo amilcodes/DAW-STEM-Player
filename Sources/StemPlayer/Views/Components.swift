@@ -8,42 +8,58 @@ struct InstrumentButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: compact ? 9 : 10, weight: .bold, design: .monospaced))
+            .font(.system(size: compact ? 9 : 10, weight: .semibold))
             .textCase(.uppercase)
-            .foregroundStyle(Color.instrumentInk.opacity(configuration.isPressed ? 0.64 : 0.94))
-            .padding(.horizontal, compact ? 8 : 11)
-            .padding(.vertical, compact ? 5 : 8)
+            .foregroundStyle(Color.instrumentInk.opacity(configuration.isPressed ? 0.62 : 0.94))
+            .padding(.horizontal, compact ? 9 : 12)
+            .frame(minHeight: compact ? 25 : 31)
             .background(
-                RoundedRectangle(cornerRadius: 2)
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
                     .fill(isLatched ? accent : Color.instrumentRaised)
-                    .overlay(RoundedRectangle(cornerRadius: 2).stroke(Color.instrumentInk.opacity(isLatched ? 0.64 : 0.38), lineWidth: 1))
-                    .shadow(color: Color.instrumentInk.opacity(0.36), radius: 0, y: configuration.isPressed ? 0 : 2)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 2, style: .continuous)
+                            .stroke(Color.instrumentInk.opacity(isLatched ? 0.58 : 0.32), lineWidth: 1)
+                    )
+                    .shadow(color: Color.instrumentInk.opacity(0.22), radius: 0, y: configuration.isPressed ? 0 : 1.5)
             )
-            .offset(y: configuration.isPressed ? 2 : 0)
-            .animation(.easeOut(duration: 0.055), value: configuration.isPressed)
+            .offset(y: configuration.isPressed ? 1.5 : 0)
+            .animation(.easeOut(duration: 0.05), value: configuration.isPressed)
     }
 }
 
 struct CircleTransportButtonStyle: ButtonStyle {
     var tint: Color = .instrumentOrange
-    var size: CGFloat = 44
+    var size: CGFloat = 40
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: size * 0.31, weight: .bold, design: .monospaced))
+            .font(.system(size: size * 0.3, weight: .bold))
             .foregroundStyle(Color.instrumentInk)
             .frame(width: size, height: size)
             .background(
                 Circle()
                     .fill(Color.instrumentRaised)
-                    .overlay(Circle().stroke(Color.instrumentInk.opacity(0.62), lineWidth: 1))
+                    .overlay(Circle().stroke(Color.instrumentInk.opacity(0.54), lineWidth: 1))
                     .overlay(alignment: .top) {
-                        Capsule().fill(tint).frame(width: size * 0.25, height: 3).padding(.top, 5)
+                        Capsule().fill(tint).frame(width: size * 0.22, height: 2).padding(.top, 5)
                     }
-                    .shadow(color: Color.instrumentInk.opacity(0.38), radius: 0, y: configuration.isPressed ? 0 : 3)
+                    .shadow(color: Color.instrumentInk.opacity(0.26), radius: 0, y: configuration.isPressed ? 0 : 2)
             )
-            .offset(y: configuration.isPressed ? 3 : 0)
-            .animation(.easeOut(duration: 0.055), value: configuration.isPressed)
+            .offset(y: configuration.isPressed ? 2 : 0)
+            .animation(.easeOut(duration: 0.05), value: configuration.isPressed)
+    }
+}
+
+struct HardwareLED: View {
+    var color: Color
+    var isOn: Bool
+    var size: CGFloat = 6
+
+    var body: some View {
+        Circle()
+            .fill(isOn ? color : Color.instrumentInk.opacity(0.16))
+            .overlay(Circle().stroke(Color.instrumentInk.opacity(0.42), lineWidth: 0.6))
+            .frame(width: size, height: size)
     }
 }
 
@@ -54,26 +70,34 @@ struct LevelMeter: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let count = vertical ? 18 : 24
+            let count = vertical ? 16 : 24
             let amount = max(0, min(1, CGFloat(value)))
             Group {
                 if vertical {
-                    VStack(spacing: 2) {
+                    VStack(spacing: 1.5) {
                         ForEach((0..<count).reversed(), id: \.self) { index in
-                            Rectangle().fill(CGFloat(index + 1) / CGFloat(count) <= amount ? tint : Color.white.opacity(0.09))
+                            meterSegment(index: index, count: count, amount: amount)
                         }
                     }
                 } else {
-                    HStack(spacing: 2) {
+                    HStack(spacing: 1.5) {
                         ForEach(0..<count, id: \.self) { index in
-                            Rectangle().fill(CGFloat(index + 1) / CGFloat(count) <= amount ? tint : Color.white.opacity(0.09))
+                            meterSegment(index: index, count: count, amount: amount)
                         }
                     }
                 }
             }
+            .padding(2)
             .frame(width: proxy.size.width, height: proxy.size.height)
+            .background(Color.instrumentDisplay)
+            .overlay(Rectangle().stroke(Color.instrumentInk.opacity(0.32), lineWidth: 0.7))
         }
-        .background(Color.black.opacity(0.38))
+    }
+
+    private func meterSegment(index: Int, count: Int, amount: CGFloat) -> some View {
+        let lit = CGFloat(index + 1) / CGFloat(count) <= amount
+        let color: Color = index > Int(Double(count) * 0.86) ? .instrumentOrange : tint
+        return Rectangle().fill(lit ? color : Color.white.opacity(0.075))
     }
 }
 
@@ -85,41 +109,43 @@ struct PhysicalFader: View {
     var body: some View {
         GeometryReader { proxy in
             let fraction = normalized(value)
-            let knobY = (1 - fraction) * max(1, proxy.size.height - 34) + 17
+            let travel = max(1, proxy.size.height - 28)
+            let knobY = (1 - fraction) * travel + 14
             ZStack(alignment: .top) {
-                HStack(spacing: 8) {
+                HStack(spacing: 7) {
                     scaleMarks
-                    Rectangle()
-                        .fill(Color.black.opacity(0.8))
-                        .frame(width: 5)
+                    Capsule()
+                        .fill(Color.instrumentInk.opacity(0.88))
+                        .frame(width: 4)
                         .overlay(alignment: .bottom) {
-                            Rectangle().fill(tint).frame(width: 2, height: max(2, proxy.size.height * fraction - 16)).padding(.bottom, 8)
+                            Capsule().fill(tint).frame(width: 1.5, height: max(1, travel * fraction))
                         }
                     scaleMarks
                 }
-                .padding(.vertical, 9)
+                .padding(.vertical, 7)
 
-                RoundedRectangle(cornerRadius: 2)
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
                     .fill(Color.instrumentRaised)
-                    .overlay(RoundedRectangle(cornerRadius: 2).stroke(Color.instrumentInk.opacity(0.8), lineWidth: 1))
-                    .overlay(Rectangle().fill(tint).frame(width: 34, height: 2))
-                    .overlay(alignment: .top) {
-                        HStack(spacing: 4) {
-                            ForEach(0..<6, id: \.self) { _ in Rectangle().fill(Color.instrumentInk.opacity(0.22)).frame(width: 1) }
-                        }.padding(.top, 5)
+                    .overlay(RoundedRectangle(cornerRadius: 2).stroke(Color.instrumentInk.opacity(0.68), lineWidth: 1))
+                    .overlay(Rectangle().fill(tint).frame(width: 28, height: 2))
+                    .overlay {
+                        HStack(spacing: 3) {
+                            ForEach(0..<5, id: \.self) { _ in
+                                Rectangle().fill(Color.instrumentInk.opacity(0.2)).frame(width: 1, height: 11)
+                            }
+                        }
                     }
-                    .frame(width: 46, height: 32)
-                    .shadow(color: .black.opacity(0.48), radius: 0, y: 3)
+                    .frame(width: 38, height: 25)
+                    .shadow(color: .black.opacity(0.25), radius: 0, y: 2)
                     .position(x: proxy.size.width / 2, y: knobY)
             }
             .contentShape(Rectangle())
             .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { gesture in
-                        let y = max(17, min(proxy.size.height - 17, gesture.location.y))
-                        let fraction = 1 - (y - 17) / max(1, proxy.size.height - 34)
-                        value = range.lowerBound + Float(fraction) * (range.upperBound - range.lowerBound)
-                    }
+                DragGesture(minimumDistance: 0).onChanged { gesture in
+                    let y = max(14, min(proxy.size.height - 14, gesture.location.y))
+                    let newFraction = 1 - (y - 14) / max(1, proxy.size.height - 28)
+                    value = range.lowerBound + Float(newFraction) * (range.upperBound - range.lowerBound)
+                }
             )
             .onTapGesture(count: 2) { value = 0 }
         }
@@ -137,39 +163,170 @@ struct PhysicalFader: View {
 
     private var scaleMarks: some View {
         VStack(spacing: 0) {
-            ForEach(0..<11, id: \.self) { index in
-                Rectangle().fill(Color.white.opacity(index == 1 ? 0.55 : 0.25)).frame(width: index % 5 == 0 ? 8 : 4, height: 1)
-                if index < 10 { Spacer() }
+            ForEach(0..<9, id: \.self) { index in
+                Rectangle()
+                    .fill(Color.instrumentInk.opacity(index == 1 ? 0.5 : 0.23))
+                    .frame(width: index.isMultiple(of: 4) ? 7 : 4, height: 1)
+                if index < 8 { Spacer() }
             }
         }
     }
 
-    private func normalized(_ value: Float) -> CGFloat {
-        CGFloat((max(range.lowerBound, min(range.upperBound, value)) - range.lowerBound) / (range.upperBound - range.lowerBound))
+    private func normalized(_ input: Float) -> CGFloat {
+        CGFloat((max(range.lowerBound, min(range.upperBound, input)) - range.lowerBound) / (range.upperBound - range.lowerBound))
     }
 }
 
-struct ModePicker: View {
+struct RotaryKnob: View {
+    var title: String
+    @Binding var value: Float
+    var range: ClosedRange<Float>
+    var defaultValue: Float
+    var accent: Color
+    var size: CGFloat
+    var formatter: (Float) -> String
+
+    @State private var dragOrigin: Float?
+
+    init(
+        _ title: String,
+        value: Binding<Float>,
+        in range: ClosedRange<Float>,
+        default defaultValue: Float = 0,
+        accent: Color = .instrumentOrange,
+        size: CGFloat = 46,
+        formatter: @escaping (Float) -> String = { String(format: "%.2f", $0) }
+    ) {
+        self.title = title
+        _value = value
+        self.range = range
+        self.defaultValue = defaultValue
+        self.accent = accent
+        self.size = size
+        self.formatter = formatter
+    }
+
+    var body: some View {
+        VStack(spacing: 4) {
+            ZStack {
+                ForEach(0..<9, id: \.self) { index in
+                    Capsule()
+                        .fill(index == 4 ? accent : Color.instrumentInk.opacity(0.3))
+                        .frame(width: 1.2, height: index == 4 ? 5 : 3)
+                        .offset(y: -size * 0.48)
+                        .rotationEffect(.degrees(-135 + Double(index) * 33.75))
+                }
+                Circle()
+                    .fill(Color.instrumentInk)
+                    .overlay(Circle().stroke(Color.black.opacity(0.45), lineWidth: 1))
+                    .shadow(color: Color.instrumentInk.opacity(0.25), radius: 0, y: 2)
+                    .frame(width: size * 0.72, height: size * 0.72)
+                Capsule()
+                    .fill(accent)
+                    .frame(width: 2, height: size * 0.22)
+                    .offset(y: -size * 0.16)
+                    .rotationEffect(.degrees(angle))
+            }
+            .frame(width: size, height: size)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { gesture in
+                        if dragOrigin == nil { dragOrigin = value }
+                        guard let dragOrigin else { return }
+                        let travel = Float(-gesture.translation.height + gesture.translation.width * 0.35)
+                        let amount = travel / 115 * (range.upperBound - range.lowerBound)
+                        value = max(range.lowerBound, min(range.upperBound, dragOrigin + amount))
+                    }
+                    .onEnded { _ in dragOrigin = nil }
+            )
+            .onTapGesture(count: 2) { value = defaultValue }
+
+            Text(title.uppercased())
+                .font(.system(size: 7, weight: .semibold))
+                .tracking(0.45)
+                .foregroundStyle(Color.instrumentTextSecondary)
+            Text(formatter(value))
+                .font(.system(size: 8, weight: .medium, design: .monospaced))
+                .foregroundStyle(Color.instrumentInk)
+                .lineLimit(1)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityValue(formatter(value))
+        .accessibilityAdjustableAction { direction in
+            let increment = (range.upperBound - range.lowerBound) / 50
+            switch direction {
+            case .increment: value = min(range.upperBound, value + increment)
+            case .decrement: value = max(range.lowerBound, value - increment)
+            @unknown default: break
+            }
+        }
+    }
+
+    private var angle: Double {
+        let fraction = Double((value - range.lowerBound) / (range.upperBound - range.lowerBound))
+        return -135 + fraction * 270
+    }
+}
+
+struct ModeSelector: View {
     @Binding var selection: WorkspaceMode
 
     var body: some View {
-        HStack(spacing: 0) {
-            ForEach(Array(WorkspaceMode.allCases.enumerated()), id: \.element.id) { index, mode in
-                Button { selection = mode } label: {
-                    VStack(spacing: 2) {
-                        Text(String(format: "%02d", index + 1)).font(.system(size: 7, weight: .medium, design: .monospaced))
-                        Text(mode.rawValue.uppercased()).font(.system(size: 10, weight: .bold, design: .monospaced))
-                    }
-                    .foregroundStyle(Color.instrumentInk)
-                    .frame(width: 76, height: 34)
-                    .background(selection == mode ? mode.accent.opacity(0.92) : Color.instrumentRaised)
-                    .overlay(Rectangle().stroke(Color.instrumentInk.opacity(0.48), lineWidth: 0.5))
-                    .overlay(alignment: .bottom) { Rectangle().fill(selection == mode ? Color.instrumentInk : Color.clear).frame(height: 2) }
+        VStack(spacing: 5) {
+            GeometryReader { proxy in
+                let modes = WorkspaceMode.allCases
+                let slot = proxy.size.width / CGFloat(modes.count)
+                let selectedIndex = modes.firstIndex(of: selection) ?? 0
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.instrumentInk.opacity(0.14))
+                        .overlay(Capsule().stroke(Color.instrumentInk.opacity(0.26), lineWidth: 1))
+                        .frame(height: 12)
+                        .padding(.horizontal, slot * 0.24)
+                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        .fill(Color.instrumentInk)
+                        .overlay(alignment: .top) {
+                            Capsule().fill(selection.accent).frame(width: 11, height: 2.5).padding(.top, 4)
+                        }
+                        .frame(width: slot * 0.62, height: 25)
+                        .offset(x: CGFloat(selectedIndex) * slot + slot * 0.19)
+                        .shadow(color: Color.instrumentInk.opacity(0.2), radius: 0, y: 2)
                 }
-                .buttonStyle(.plain)
+                .frame(maxHeight: .infinity)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0).onChanged { gesture in
+                        let index = max(0, min(modes.count - 1, Int(gesture.location.x / max(1, slot))))
+                        selection = modes[index]
+                    }
+                )
+            }
+            .frame(height: 27)
+
+            HStack(spacing: 0) {
+                ForEach(WorkspaceMode.allCases) { mode in
+                    Text(mode.shortName)
+                        .font(.system(size: 7, weight: selection == mode ? .bold : .medium))
+                        .foregroundStyle(selection == mode ? Color.instrumentInk : Color.instrumentTextSecondary)
+                        .frame(maxWidth: .infinity)
+                }
             }
         }
-        .shadow(color: Color.instrumentInk.opacity(0.3), radius: 0, y: 2)
+        .frame(width: 154, height: 42)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Instrument mode")
+        .accessibilityValue(selection.detailName)
+        .accessibilityAdjustableAction { direction in
+            let modes = WorkspaceMode.allCases
+            let current = modes.firstIndex(of: selection) ?? 0
+            switch direction {
+            case .increment: selection = modes[min(modes.count - 1, current + 1)]
+            case .decrement: selection = modes[max(0, current - 1)]
+            @unknown default: break
+            }
+        }
     }
 }
 
@@ -179,27 +336,16 @@ struct KeyCap: View {
 
     var body: some View {
         Text(text.uppercased())
-            .font(.system(size: 9, weight: .bold, design: .monospaced))
+            .font(.system(size: 8, weight: .semibold, design: .monospaced))
             .foregroundStyle(Color.instrumentInk)
-            .frame(minWidth: wide ? 58 : 25, minHeight: 22)
+            .frame(minWidth: wide ? 54 : 24, minHeight: 21)
             .padding(.horizontal, wide ? 4 : 0)
             .background(
                 RoundedRectangle(cornerRadius: 2)
                     .fill(Color.instrumentRaised)
-                    .overlay(RoundedRectangle(cornerRadius: 2).stroke(Color.instrumentInk.opacity(0.42), lineWidth: 1))
-                    .shadow(color: Color.instrumentInk.opacity(0.28), radius: 0, y: 2)
+                    .overlay(RoundedRectangle(cornerRadius: 2).stroke(Color.instrumentInk.opacity(0.3), lineWidth: 1))
+                    .shadow(color: Color.instrumentInk.opacity(0.18), radius: 0, y: 1)
             )
-    }
-}
-
-struct HardwareLED: View {
-    var color: Color
-    var isOn: Bool
-
-    var body: some View {
-        Circle().fill(isOn ? color : Color.instrumentInk.opacity(0.18))
-            .overlay(Circle().stroke(Color.instrumentInk.opacity(0.55), lineWidth: 0.7))
-            .frame(width: 7, height: 7)
     }
 }
 
@@ -207,10 +353,13 @@ struct PanelScrews: View {
     var body: some View {
         GeometryReader { proxy in
             ForEach(0..<4, id: \.self) { index in
-                Circle().fill(Color.instrumentInk.opacity(0.38))
-                    .overlay(Rectangle().fill(Color.instrumentSurface.opacity(0.8)).frame(width: 4, height: 0.7))
-                    .frame(width: 8, height: 8)
-                    .position(x: index % 2 == 0 ? 10 : proxy.size.width - 10, y: index < 2 ? 10 : proxy.size.height - 10)
+                Circle()
+                    .fill(Color.instrumentInk.opacity(0.24))
+                    .frame(width: 5, height: 5)
+                    .position(
+                        x: index % 2 == 0 ? 9 : proxy.size.width - 9,
+                        y: index < 2 ? 9 : proxy.size.height - 9
+                    )
             }
         }
         .allowsHitTesting(false)

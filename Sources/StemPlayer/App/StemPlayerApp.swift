@@ -11,14 +11,22 @@ struct StemPlayerApp: App {
                 .environmentObject(appState)
                 .environmentObject(appState.audio)
                 .preferredColorScheme(.light)
-                .frame(minWidth: 1_080, minHeight: 700)
+                .frame(
+                    minWidth: 1_060,
+                    idealWidth: 1_160,
+                    maxWidth: 1_280,
+                    minHeight: 580,
+                    idealHeight: 620,
+                    maxHeight: 700
+                )
                 .onAppear {
                     appState.activate()
                     NSApp.appearance = NSAppearance(named: .aqua)
                 }
         }
         .windowStyle(.hiddenTitleBar)
-        .defaultSize(width: 1_320, height: 840)
+        .windowResizability(.contentSize)
+        .defaultSize(width: 1_160, height: 620)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New Session") { appState.newSession() }
@@ -58,6 +66,14 @@ struct StemPlayerApp: App {
                 Divider()
                 Button("Keyboard Map") { appState.showShortcutOverlay = true }
                     .keyboardShortcut("/", modifiers: [.command])
+            }
+            CommandMenu("Instrument") {
+                Button("Stem Mixer") { appState.mode = .mix }
+                    .keyboardShortcut("1", modifiers: .command)
+                Button("Drum Pads") { appState.mode = .pads }
+                    .keyboardShortcut("2", modifiers: .command)
+                Button("Step Sequencer") { appState.mode = .pattern }
+                    .keyboardShortcut("3", modifiers: .command)
             }
         }
 
