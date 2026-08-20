@@ -123,6 +123,10 @@ struct RootView: View {
                 Divider()
                 Button("Save project as…") { app.saveProjectAs() }
                 Button("Export mix…") { app.exportMix() }.disabled(app.project.stems.isEmpty)
+                Divider()
+                Button(app.tempoSync.isEnabled ? "Stop system audio sync" : "Sync pads to system audio") {
+                    app.toggleSystemTempoSync()
+                }
                 if app.canSeparate {
                     Divider()
                     Button("Separate song into four stems") { app.separateCurrentSong() }

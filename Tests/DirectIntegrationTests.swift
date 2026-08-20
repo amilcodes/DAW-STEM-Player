@@ -11,6 +11,7 @@ struct DirectIntegrationTests {
         defer { try? FileManager.default.removeItem(at: temporaryRoot) }
 
         try testModel()
+        testTempoEstimator()
         let toneURL = try makeTone(in: temporaryRoot)
         try testAudioUtilities(with: toneURL)
         try testProjectStore(in: temporaryRoot, asset: toneURL)
@@ -21,7 +22,7 @@ struct DirectIntegrationTests {
         }
 
         let engineResult = skipsAudioEngine ? "audio engine checks skipped by environment" : "realtime engine and offline export"
-        print("PASS: model, project package, generated kit, waveform analysis, import probe, and \(engineResult)")
+        print("PASS: model, tempo lock, project package, generated kit, waveform analysis, import probe, and \(engineResult)")
     }
 
     private static func testModel() throws {
@@ -38,6 +39,58 @@ struct DirectIntegrationTests {
         precondition(decoded.pads.count == 12)
         precondition(LoopRange(isEnabled: true, startSeconds: 2, endSeconds: 2).duration == 0.05)
         precondition(62.345.transportString == "01:02.344" || 62.345.transportString == "01:02.345")
+    }
+
+    private static func testTempoEstimator() {
+        let sampleRate = 8_000.0
+        let duration = 9.0
+        var lockedEstimator: TempoEstimator?
+
+        for expectedBPM in [90.0, 120.0, 174.0] {
+            let frameCount = Int(sampleRate * duration)
+            var signal = [Float](repeating: 0, count: frameCount)
+            let period = 60 / expectedBPM
+            let beatFrames = Int((sampleRate * period).rounded())
+
+            for beatStart in stride(from: 0, to: frameCount, by: beatFrames) {
+                for offset in 0..<min(96, frameCount - beatStart) {
+                    let decay = exp(-Double(offset) / 18)
+                    signal[beatStart + offset] = Float(sin(Double(offset) * 0.91) * decay * 0.9)
+                }
+            }
+
+            let estimator = TempoEstimator()
+            var estimate: TempoEstimator.Estimate?
+            let chunkSize = 512
+            for start in stride(from: 0, to: signal.count, by: chunkSize) {
+                let end = min(start + chunkSize, signal.count)
+                if let update = estimator.process(
+                    samples: Array(signal[start..<end]),
+                    sampleRate: sampleRate,
+                    startTime: Double(start) / sampleRate
+                ) {
+                    estimate = update
+                }
+            }
+
+            precondition(estimate != nil, "A steady \(expectedBPM) BPM click track should produce a tempo lock.")
+            precondition(abs((estimate?.bpm ?? 0) - expectedBPM) < 1.8, "Expected \(expectedBPM) BPM, got \(estimate?.bpm ?? 0).")
+            precondition((estimate?.confidence ?? 0) >= 0.16, "The click-track lock should clear the live-sync confidence threshold.")
+            let reference = estimate?.beatReferenceTime ?? 0
+            let phaseError = abs(reference / period - (reference / period).rounded())
+            precondition(phaseError < 0.08, "The estimated beat phase should follow the click positions.")
+            if expectedBPM == 120 { lockedEstimator = estimator }
+        }
+
+        let quietTail = [Float](repeating: 0, count: Int(sampleRate * 3))
+        precondition(
+            lockedEstimator?.process(samples: quietTail, sampleRate: sampleRate, startTime: duration) == nil,
+            "A tempo lock should expire after rhythmic evidence stops."
+        )
+
+        let silentEstimator = TempoEstimator()
+        let silence = [Float](repeating: 0, count: Int(sampleRate * 5))
+        precondition(silentEstimator.process(samples: silence, sampleRate: sampleRate, startTime: 0) == nil)
     }
 
     private static func makeTone(in directory: URL) throws -> URL {

@@ -17,6 +17,7 @@ A narrow 320 × 520-point native macOS instrument for playing, separating, mixin
 - Seek on the waveform and set loop points.
 - Separate a song locally with a Core ML model.
 - Play twelve drum pads with the mouse, keyboard, or simultaneous trackpad touches.
+- Detect the tempo and beat phase of system audio, then quantize live pad hits to its sixteenth-note grid.
 - Retrigger pads by sliding between trackpad cells while other fingers keep playing.
 - Load custom pad samples.
 - Record and edit a 16-step drum pattern with three voice banks, four velocity levels, tempo, bars, and swing.
@@ -40,6 +41,7 @@ A narrow 320 × 520-point native macOS instrument for playing, separating, mixin
 
 - Apple silicon Mac
 - macOS 14 or newer
+- Screen & System Audio Recording permission for system-audio beat sync
 - Xcode Command Line Tools 16.4 or newer
 - Rust and Cargo
 - Internet access for the first stem-separation model download
@@ -91,6 +93,16 @@ The pad surface listens to native `NSTouch` events. Each simultaneous contact is
 
 The pointer must remain over the pad surface while trackpad mode is active. macOS sends raw touch events to the view under the pointer, and system gestures still belong to macOS.
 
+## System-audio beat sync
+
+Move the mode switch to **drum**, start music in another app, then press **sync** or `B`. The first use asks for Screen & System Audio Recording access. Grant it in System Settings and restart Stem Player if macOS requests a restart.
+
+The voice display reads `listening` while it gathers rhythm data. A stable tempo normally locks after four to eight seconds; the display then shows the detected BPM in green. Mouse, keyboard, and simultaneous trackpad hits are scheduled to the next detected sixteenth note. Press **sync** or `B` again for immediate, unquantized pads.
+
+The detector runs locally. It builds a 100 Hz onset envelope, searches the recent audio for a stable periodic pulse, and tracks beat phase against the macOS host clock. It needs no model weights, account, network request, or stem separation. Stem Player excludes its own output from capture so drum hits do not teach the detector the wrong pulse.
+
+Very loose, ambient, changing-tempo, or beatless material may stay in `listening`. Bluetooth output adds latency after scheduling; built-in speakers, wired headphones, or an audio interface feel tighter.
+
 ## Keyboard controls
 
 | Action | Key |
@@ -104,6 +116,7 @@ The pointer must remain over the pad surface while trackpad mode is active. macO
 | Adjust selected stem level | `↑` / `↓` |
 | Mute or solo selected stem | `M` / `S` |
 | Arm or disarm trackpad | `T` |
+| Toggle system-audio beat sync | `B` |
 | Leave trackpad mode | `Escape` |
 | Record pattern hits | `Command-R` |
 | Export mix | `Command-E` |
@@ -123,7 +136,7 @@ Open the in-app control reference with `Command-/`.
 | Path | Purpose |
 |---|---|
 | `Sources/StemPlayer/App` | App entry point and menus |
-| `Sources/StemPlayer/Audio` | Real-time playback, meters, waveform analysis, and factory drums |
+| `Sources/StemPlayer/Audio` | Real-time playback, system-audio tempo tracking, meters, waveform analysis, and factory drums |
 | `Sources/StemPlayer/Input` | Keyboard and multitouch trackpad input |
 | `Sources/StemPlayer/Model` | Project models and application state |
 | `Sources/StemPlayer/Services` | Import, export, project storage, and separation |
@@ -141,7 +154,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the audio graph, process bo
 make test
 ```
 
-The test command runs the Rust worker tests and a native Swift integration binary. The Swift checks cover model encoding, project packages, generated drums, waveform analysis, audio probing, real-time playback, and offline export. Run audio tests from a normal logged-in macOS session so Audio Unit components are available. In a restricted runner without Audio Units, use `SP4_SKIP_AUDIO_ENGINE=1 ./Scripts/test-core.sh` for the non-engine checks.
+The test command runs the Rust worker tests and a native Swift integration binary. The Swift checks cover model encoding, tempo lock and silence rejection, project packages, generated drums, waveform analysis, audio probing, real-time playback, and offline export. Run audio tests from a normal logged-in macOS session so Audio Unit components are available. In a restricted runner without Audio Units, use `SP4_SKIP_AUDIO_ENGINE=1 ./Scripts/test-core.sh` for the non-engine checks.
 
 ## Privacy and distribution
 

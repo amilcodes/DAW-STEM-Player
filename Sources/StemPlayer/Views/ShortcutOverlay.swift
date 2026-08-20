@@ -12,6 +12,7 @@ struct ShortcutOverlay: View {
         ("M / S", "mute / solo selected stem"),
         ("↑ / ↓", "selected stem level"),
         ("T", "arm the trackpad"),
+        ("B", "system-audio beat sync"),
         ("Escape", "leave trackpad mode"),
         ("⌘R", "record pad hits"),
         ("⌘E", "export mix")

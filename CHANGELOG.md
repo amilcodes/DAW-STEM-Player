@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.7.0
+
+- Added live system-audio tempo and beat-phase detection for the drum surface.
+- Quantized mouse, keyboard, and multitouch pad hits to the next detected sixteenth note.
+- Added one `sync` hardware key, a `B` shortcut, and compact listening, lock, and BPM readouts.
+- Excluded Stem Player's own output from capture so played drums do not feed the detector.
+- Recorded externally synchronized hits onto the detected grid and copied the locked tempo into the pattern.
+- Used host-clock capture timestamps for phase alignment and dropped stale locks when rhythmic audio stops.
+- Added deterministic tempo-lock and silence-rejection integration tests.
+
 ## 2.6.0
 
 - Rebuilt the window as one continuous rounded hardware faceplate instead of stacked software panels.

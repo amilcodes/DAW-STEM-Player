@@ -83,7 +83,9 @@ struct WaveformTimeline: View {
                                 .lineLimit(1)
                             HardwareLED(color: audio.isPlaying ? .instrumentGreen : .instrumentOrange, isOn: true, size: 3)
                         Spacer()
-                            Text(String(format: "%02d", app.project.stems.count))
+                            Text(app.tempoSync.isLocked
+                                 ? String(format: "%.1f", app.tempoSync.bpm ?? 0)
+                                 : String(format: "%02d", app.project.stems.count))
                                 .font(.instrumentNumber(5.5, weight: .medium))
                         }
                         Spacer()

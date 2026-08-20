@@ -63,6 +63,10 @@ struct StemPlayerApp: App {
                     appState.isPatternRecording.toggle()
                 }
                 .keyboardShortcut("r", modifiers: .command)
+                Button(appState.tempoSync.isEnabled ? "Stop System Audio Sync" : "Sync Pads to System Audio") {
+                    appState.toggleSystemTempoSync()
+                }
+                .keyboardShortcut("b", modifiers: [])
                 Divider()
                 Button("Keyboard Map") { appState.showShortcutOverlay = true }
                     .keyboardShortcut("/", modifiers: [.command])
@@ -80,7 +84,7 @@ struct StemPlayerApp: App {
         Settings {
             SettingsView()
                 .environmentObject(appState)
-                .frame(width: 420, height: 290)
+                .frame(width: 420, height: 330)
         }
     }
 }

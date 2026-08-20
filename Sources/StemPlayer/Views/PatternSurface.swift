@@ -103,12 +103,12 @@ struct PatternSurface: View {
                 RotaryKnob(
                     "tempo",
                     value: Binding(
-                        get: { Float(app.project.pattern.bpm) },
+                        get: { Float(app.tempoSync.bpm ?? app.project.pattern.bpm) },
                         set: { app.setPatternBPM(Double($0)) }
                     ),
                     in: 40...240,
                     default: 100,
-                    accent: .instrumentOrange,
+                    accent: app.tempoSync.isLocked ? .instrumentGreen : .instrumentOrange,
                     size: 29,
                     formatter: { "\(Int($0))" }
                 )

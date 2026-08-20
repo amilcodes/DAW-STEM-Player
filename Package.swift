@@ -22,6 +22,7 @@ let package = Package(
                 .linkedFramework("AVFoundation"),
                 .linkedFramework("Accelerate"),
                 .linkedFramework("AppKit"),
+                .linkedFramework("ScreenCaptureKit"),
                 .linkedFramework("UniformTypeIdentifiers")
             ]
         ),

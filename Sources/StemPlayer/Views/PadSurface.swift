@@ -151,9 +151,9 @@ private struct VoiceControlDeck: View {
                         .font(.instrument(8, weight: .regular))
                         .foregroundStyle(Color.instrumentRaised.opacity(0.86))
                         .lineLimit(1)
-                    Text(pad.relativePath == nil ? "factory" : "sample")
+                    Text(app.tempoSync.isEnabled ? app.tempoSync.displayText : (pad.relativePath == nil ? "factory" : "sample"))
                         .font(.instrument(5, weight: .regular))
-                        .foregroundStyle(Color.white.opacity(0.32))
+                        .foregroundStyle(app.tempoSync.isLocked ? Color.instrumentGreen.opacity(0.82) : Color.white.opacity(0.32))
                 }
                 .padding(7)
                 .frame(maxWidth: .infinity, minHeight: 57, alignment: .leading)
@@ -200,6 +200,9 @@ private struct VoiceControlDeck: View {
                     .buttonStyle(HardwareKeyStyle(width: 43, height: 25, accent: .instrumentOrange, isLatched: app.isTrackpadArmed))
                     .keyboardShortcut("t", modifiers: [])
                     .help("Map the full Magic Trackpad to the 4 × 3 field — T")
+                Button("sync") { app.toggleSystemTempoSync() }
+                    .buttonStyle(HardwareKeyStyle(width: 39, height: 25, accent: .instrumentGreen, isLatched: app.tempoSync.isEnabled))
+                    .help("Quantize pads to system audio — B")
                 Spacer(minLength: 0)
                 if pad.relativePath != nil {
                     Button("↺") { app.restoreFactoryPad() }

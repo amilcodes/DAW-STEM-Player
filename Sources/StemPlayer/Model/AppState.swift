@@ -1,5 +1,6 @@
 import AppKit
 import AVFoundation
+import Combine
 import Foundation
 import UniformTypeIdentifiers
 
@@ -35,6 +36,7 @@ final class AppState: ObservableObject {
 
     let audio: AudioEngineController
     let separator: SeparationService
+    let tempoSync: SystemAudioTempoSync
 
     private let store = ProjectStore()
     private let keyboard = KeyboardMonitor()
@@ -42,10 +44,12 @@ final class AppState: ObservableObject {
     private var patternTimer: Timer?
     private var lastPatternBeat: Double?
     private var padHoldCounts: [Int: Int] = [:]
+    private var tempoSyncObservation: AnyCancellable?
 
     init() {
         audio = AudioEngineController()
         separator = SeparationService()
+        tempoSync = SystemAudioTempoSync()
         let defaultURL = store.autosaveURL
         projectURL = defaultURL
 
@@ -59,6 +63,12 @@ final class AppState: ObservableObject {
         selectedStemID = project.stems.first?.id
         keyboard.handler = { [weak self] action in self?.handleKeyboard(action) }
         keyboard.mode = mode
+        tempoSync.onFailure = { [weak self] detail in
+            self?.presentedError = "System audio sync could not start. Grant Stem Player access in System Settings → Privacy & Security → Screen & System Audio Recording, then restart the app.\n\n\(detail)"
+        }
+        tempoSyncObservation = tempoSync.objectWillChange.sink { [weak self] _ in
+            DispatchQueue.main.async { self?.objectWillChange.send() }
+        }
         patternTimer = Timer.scheduledTimer(withTimeInterval: 0.012, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.pollPattern() }
         }
@@ -71,6 +81,7 @@ final class AppState: ObservableObject {
     deinit {
         patternTimer?.invalidate()
         autosaveWorkItem?.cancel()
+        tempoSync.stop()
     }
 
     var selectedStem: StemModel? {
@@ -108,6 +119,16 @@ final class AppState: ObservableObject {
     func setPatternSwing(_ swing: Double) {
         project.pattern.swing = max(0, min(0.75, swing))
         scheduleAutosave()
+    }
+
+    func toggleSystemTempoSync() {
+        if tempoSync.isEnabled {
+            tempoSync.stop()
+            notice = "System tempo sync off"
+        } else {
+            tempoSync.start()
+            notice = "Listening to system audio"
+        }
     }
 
     func setPatternBars(_ bars: Int) {
@@ -318,14 +339,19 @@ final class AppState: ObservableObject {
     func triggerPad(index: Int, velocity: Float = 0.86, hold: Bool = false) {
         guard project.pads.indices.contains(index) else { return }
         selectedPadIndex = index
-        audio.triggerPad(project.pads[index], velocity: velocity)
+        let quantizedHostTime = tempoSync.isEnabled
+            ? tempoSync.nextQuantizedHostTime(subdivision: 4)
+            : nil
+        audio.triggerPad(project.pads[index], velocity: velocity, hostTime: quantizedHostTime)
         padHoldCounts[index, default: 0] += 1
         activePads.insert(index)
 
         if hapticsEnabled {
             NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
         }
-        if isPatternRecording && audio.isPlaying { recordPadHit(index: index, velocity: velocity) }
+        if isPatternRecording && (audio.isPlaying || tempoSync.isLocked) {
+            recordPadHit(index: index, velocity: velocity)
+        }
 
         if !hold {
             Task { @MainActor [weak self] in
@@ -599,6 +625,17 @@ final class AppState: ObservableObject {
     }
 
     private func recordPadHit(index: Int, velocity: Float) {
+        if tempoSync.isLocked,
+           let externalBeat = tempoSync.nextQuantizedBeat(lengthInBeats: project.pattern.lengthInBeats, subdivision: 4) {
+            if let detectedBPM = tempoSync.bpm {
+                project.pattern.bpm = max(40, min(240, detectedBPM))
+            }
+            project.pattern.events.append(PatternEvent(padIndex: index, beat: externalBeat, velocity: velocity))
+            project.pattern.events.sort { $0.beat < $1.beat }
+            scheduleAutosave()
+            return
+        }
+
         let beat = (audio.currentTime * project.pattern.bpm / 60)
             .truncatingRemainder(dividingBy: project.pattern.lengthInBeats)
         let divisions = 16.0
@@ -658,6 +695,7 @@ final class AppState: ObservableObject {
         case .setLoopIn: setLoopIn()
         case .setLoopOut: setLoopOut()
         case .toggleTrackpad: armTrackpad(!isTrackpadArmed); mode = .pads
+        case .toggleTempoSync: toggleSystemTempoSync()
         case .escape:
             if isTrackpadArmed { armTrackpad(false) }
             else { showShortcutOverlay = false }

@@ -11,6 +11,7 @@ final class KeyboardMonitor {
         case setLoopIn
         case setLoopOut
         case toggleTrackpad
+        case toggleTempoSync
         case escape
         case selectStem(Int)
         case adjustStem(Float)
@@ -72,6 +73,7 @@ final class KeyboardMonitor {
         case 34: handler?(.setLoopIn); return true
         case 31: handler?(.setLoopOut); return true
         case 17: handler?(.toggleTrackpad); return true
+        case 11: handler?(.toggleTempoSync); return true
         case 53: handler?(.escape); return true
         case 46: handler?(.toggleMute); return true
         case 1: handler?(.toggleSolo); return true

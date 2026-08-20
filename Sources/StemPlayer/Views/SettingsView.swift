@@ -21,7 +21,16 @@ struct SettingsView: View {
                 Text("performance").font(.instrument(11, weight: .medium))
                 Toggle("Trackpad haptic feedback", isOn: $app.hapticsEnabled)
                 Toggle("Play the recorded drum pattern", isOn: $app.isPatternEnabled)
-                Text("Built-in speakers, wired headphones, or an audio interface give the lowest pad latency. Bluetooth adds output delay.")
+                Toggle(
+                    "Quantize pads to system audio",
+                    isOn: Binding(
+                        get: { app.tempoSync.isEnabled },
+                        set: { enabled in
+                            if enabled != app.tempoSync.isEnabled { app.toggleSystemTempoSync() }
+                        }
+                    )
+                )
+                Text("System sync needs Screen & System Audio Recording access. Built-in or wired output gives the tightest timing; Bluetooth adds delay.")
                     .font(.instrument(9, weight: .regular))
                     .foregroundStyle(Color.instrumentTextSecondary)
                     .lineSpacing(2)

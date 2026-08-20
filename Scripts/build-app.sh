@@ -31,6 +31,7 @@ xcrun swiftc \
   -framework AppKit \
   -framework AVFoundation \
   -framework Accelerate \
+  -framework ScreenCaptureKit \
   -framework UniformTypeIdentifiers \
   -framework AudioToolbox
 
