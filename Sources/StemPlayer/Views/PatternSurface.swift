@@ -26,8 +26,8 @@ struct PatternSurface: View {
             controlHeader
             Rectangle().fill(Color.instrumentLine).frame(height: 1)
             sequencerGrid
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 5)
             Rectangle().fill(Color.instrumentLine).frame(height: 1)
             parameterDeck
         }
@@ -39,16 +39,16 @@ struct PatternSurface: View {
     }
 
     private var controlHeader: some View {
-        HStack(spacing: 10) {
-            HardwareLED(color: .instrumentGreen, isOn: app.isPatternEnabled)
-            Text("16-step sequencer")
-                .font(.system(size: 10, weight: .semibold))
-            Text("four voices visible / three banks / right-click a step for velocity")
-                .font(.system(size: 8, weight: .regular))
+        HStack(spacing: 7) {
+            HardwareLED(color: .instrumentGreen, isOn: app.isPatternEnabled, size: 4)
+            Text("16 STEP")
+                .font(.system(size: 7.5, weight: .semibold, design: .monospaced))
+            Text("4 VOICES / VELOCITY")
+                .font(.system(size: 5.5, weight: .medium, design: .monospaced))
                 .foregroundStyle(Color.instrumentTextSecondary)
             Spacer()
-            Text("VOICE BANK")
-                .font(.system(size: 7, weight: .semibold))
+            Text("BANK")
+                .font(.system(size: 5.5, weight: .semibold, design: .monospaced))
                 .foregroundStyle(Color.instrumentTextSecondary)
             ForEach(0..<3, id: \.self) { bank in
                 Button(["A", "B", "C"][bank]) { voiceBank = bank }
@@ -61,17 +61,17 @@ struct PatternSurface: View {
                     )
             }
         }
-        .padding(.horizontal, 12)
-        .frame(height: 36)
+        .padding(.horizontal, 7)
+        .frame(height: 24)
         .background(Color.instrumentSurface.opacity(0.55))
     }
 
     private var sequencerGrid: some View {
         GeometryReader { proxy in
-            let labelWidth: CGFloat = 108
-            let gap: CGFloat = 5
-            let stepWidth = max(26, (proxy.size.width - labelWidth - gap * 15) / 16)
-            VStack(spacing: 7) {
+            let labelWidth: CGFloat = 65
+            let gap: CGFloat = 2
+            let stepWidth = max(14, (proxy.size.width - labelWidth - gap * 15) / 16)
+            VStack(spacing: 4) {
                 HStack(spacing: gap) {
                     Text("BANK \(["A", "B", "C"][voiceBank])")
                         .frame(width: labelWidth, alignment: .leading)
@@ -87,7 +87,7 @@ struct PatternSurface: View {
                         .frame(width: stepWidth)
                     }
                 }
-                .font(.system(size: 7, weight: .medium, design: .monospaced))
+                        .font(.system(size: 5.5, weight: .medium, design: .monospaced))
                 .foregroundStyle(Color.instrumentTextSecondary)
 
                 ForEach(bankPads) { pad in
@@ -96,18 +96,18 @@ struct PatternSurface: View {
                             app.selectPad(pad.index)
                             app.triggerPad(index: pad.index)
                         } label: {
-                            HStack(spacing: 8) {
-                                Rectangle().fill(Color.padColor(pad.index)).frame(width: 4, height: 26)
-                                VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 4) {
+                                Rectangle().fill(Color.padColor(pad.index)).frame(width: 3, height: 18)
+                                VStack(alignment: .leading, spacing: 1) {
                                     Text(String(format: "%02d", pad.index + 1))
-                                        .font(.system(size: 7, weight: .medium, design: .monospaced))
+                                        .font(.system(size: 5, weight: .medium, design: .monospaced))
                                         .foregroundStyle(Color.instrumentTextSecondary)
                                     Text(pad.name)
-                                        .font(.system(size: 9, weight: .semibold))
+                                        .font(.system(size: 6.5, weight: .semibold))
                                         .lineLimit(1)
                                 }
                                 Spacer()
-                                HardwareLED(color: Color.padColor(pad.index), isOn: app.selectedPadIndex == pad.index)
+                                HardwareLED(color: Color.padColor(pad.index), isOn: app.selectedPadIndex == pad.index, size: 3)
                             }
                             .frame(width: labelWidth, alignment: .leading)
                         }
@@ -141,7 +141,7 @@ struct PatternSurface: View {
     }
 
     private var parameterDeck: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 8) {
             RotaryKnob(
                 "Tempo",
                 value: Binding(
@@ -151,7 +151,7 @@ struct PatternSurface: View {
                 in: 40...240,
                 default: 100,
                 accent: .instrumentGreen,
-                size: 44,
+                size: 30,
                 formatter: { "\(Int($0)) bpm" }
             )
             RotaryKnob(
@@ -162,37 +162,37 @@ struct PatternSurface: View {
                 ),
                 in: 0...0.75,
                 accent: .instrumentYellow,
-                size: 44,
+                size: 30,
                 formatter: { "\(Int($0 * 100))%" }
             )
-            Rectangle().fill(Color.instrumentLine).frame(width: 1, height: 48)
+            Rectangle().fill(Color.instrumentLine).frame(width: 1, height: 32)
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text("BARS")
-                    .font(.system(size: 7, weight: .semibold))
+                    .font(.system(size: 5.5, weight: .semibold, design: .monospaced))
                     .foregroundStyle(Color.instrumentTextSecondary)
-                HStack(spacing: 7) {
+                HStack(spacing: 3) {
                     Button("−") { app.setPatternBars(app.project.pattern.bars - 1) }
                         .buttonStyle(InstrumentButtonStyle(compact: true))
                     Text("\(app.project.pattern.bars)")
-                        .font(.system(size: 11, weight: .medium, design: .monospaced))
-                        .frame(width: 20)
+                        .font(.system(size: 8, weight: .medium, design: .monospaced))
+                        .frame(width: 14)
                     Button("+") { app.setPatternBars(app.project.pattern.bars + 1) }
                         .buttonStyle(InstrumentButtonStyle(compact: true))
                 }
             }
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text("EDIT BAR")
-                    .font(.system(size: 7, weight: .semibold))
+                    .font(.system(size: 5.5, weight: .semibold, design: .monospaced))
                     .foregroundStyle(Color.instrumentTextSecondary)
-                HStack(spacing: 7) {
+                HStack(spacing: 3) {
                     Button("◀") { app.selectPatternBar(app.selectedPatternBar - 1) }
                         .disabled(app.selectedPatternBar == 0)
                         .buttonStyle(InstrumentButtonStyle(compact: true))
                     Text("\(app.selectedPatternBar + 1)/\(app.project.pattern.bars)")
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
-                        .frame(width: 34)
+                        .font(.system(size: 7, weight: .medium, design: .monospaced))
+                        .frame(width: 27)
                     Button("▶") { app.selectPatternBar(app.selectedPatternBar + 1) }
                         .disabled(app.selectedPatternBar >= app.project.pattern.bars - 1)
                         .buttonStyle(InstrumentButtonStyle(compact: true))
@@ -203,13 +203,13 @@ struct PatternSurface: View {
 
             Button(app.isPatternEnabled ? "Run on" : "Run") { app.isPatternEnabled.toggle() }
                 .buttonStyle(InstrumentButtonStyle(accent: .instrumentGreen, isLatched: app.isPatternEnabled, compact: true))
-            Button(app.isPatternRecording ? "Recording" : "Record hits") { app.isPatternRecording.toggle() }
+            Button(app.isPatternRecording ? "Rec on" : "Record") { app.isPatternRecording.toggle() }
                 .buttonStyle(InstrumentButtonStyle(accent: .instrumentOrange, isLatched: app.isPatternRecording, compact: true))
             Button("Clear") { app.clearPattern() }
                 .buttonStyle(InstrumentButtonStyle(compact: true))
         }
-        .padding(.horizontal, 13)
-        .frame(height: 74)
+        .padding(.horizontal, 7)
+        .frame(height: 48)
         .background(Color.instrumentSurface.opacity(0.48))
     }
 }
@@ -226,10 +226,10 @@ private struct StepKey: View {
     var body: some View {
         Button(action: action) {
             ZStack(alignment: .bottom) {
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                RoundedRectangle(cornerRadius: 1.5, style: .continuous)
                     .fill(fillColor)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 2)
+                        RoundedRectangle(cornerRadius: 1.5)
                             .stroke(isCurrent ? Color.instrumentGreen : Color.instrumentInk.opacity(0.25), lineWidth: isCurrent ? 2 : 1)
                     )
                     .shadow(color: Color.instrumentInk.opacity(velocity == nil ? 0.08 : 0.2), radius: 0, y: velocity == nil ? 0 : 2)
@@ -237,11 +237,11 @@ private struct StepKey: View {
                     Rectangle()
                         .fill(Color.instrumentRaised.opacity(0.75))
                         .frame(height: max(2, CGFloat(velocity) * 6))
-                        .padding(.horizontal, 4)
-                        .padding(.bottom, 4)
+                        .padding(.horizontal, 2)
+                        .padding(.bottom, 2)
                 }
                 if step.isMultiple(of: 4) {
-                    Rectangle().fill(Color.instrumentInk.opacity(0.3)).frame(width: 2, height: 2).padding(.bottom, 4)
+                    Rectangle().fill(Color.instrumentInk.opacity(0.3)).frame(width: 2, height: 2).padding(.bottom, 2)
                 }
             }
             .frame(width: width)

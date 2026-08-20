@@ -11,7 +11,7 @@ struct PadSurface: View {
                 GeometryReader { proxy in
                     ZStack {
                         PadGrid(interactive: !app.isTrackpadArmed)
-                            .padding(12)
+                            .padding(6)
                         if app.isTrackpadArmed {
                             TrackpadTouchView(
                                 onBegan: app.trackpadTouchBegan,
@@ -25,7 +25,7 @@ struct PadSurface: View {
                                     Text("\(touch.padIndex + 1)")
                                         .font(.system(size: 9, weight: .semibold, design: .monospaced))
                                 }
-                                .frame(width: 34, height: 34)
+                                .frame(width: 24, height: 24)
                                 .position(
                                     x: touch.normalizedX * proxy.size.width,
                                     y: (1 - touch.normalizedY) * proxy.size.height
@@ -34,14 +34,14 @@ struct PadSurface: View {
                             }
                             VStack {
                                 Spacer()
-                                Text("LIVE TRACKPAD FIELD  ·  MOVE BETWEEN CELLS TO RETRIGGER  ·  T OR ESC TO EXIT")
-                                    .font(.system(size: 7, weight: .semibold, design: .monospaced))
+                                Text("TRACKPAD LIVE  ·  T / ESC EXIT")
+                                    .font(.system(size: 6, weight: .semibold, design: .monospaced))
                                     .foregroundStyle(Color.instrumentRaised)
-                                    .padding(.horizontal, 10)
-                                    .frame(height: 22)
+                                    .padding(.horizontal, 7)
+                                    .frame(height: 17)
                                     .background(Color.instrumentInk.opacity(0.84))
                             }
-                            .padding(12)
+                            .padding(6)
                             .allowsHitTesting(false)
                         }
                     }
@@ -49,34 +49,34 @@ struct PadSurface: View {
             }
 
             Rectangle().fill(Color.instrumentLine).frame(width: 1)
-            VoiceControlDeck().frame(width: 238)
+            VoiceControlDeck().frame(width: 158)
         }
         .background(Color.instrumentPlate.opacity(0.52))
         .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 1))
     }
 
     private var padHeader: some View {
-        HStack(spacing: 9) {
-            HardwareLED(color: app.isTrackpadArmed ? .instrumentYellow : .instrumentOrange, isOn: true)
-            Text("12-pad performance matrix")
-                .font(.system(size: 10, weight: .semibold))
-            Text(app.isTrackpadArmed ? "raw multi-touch active" : "click / keys / trackpad")
-                .font(.system(size: 8, weight: .regular))
+        HStack(spacing: 7) {
+            HardwareLED(color: app.isTrackpadArmed ? .instrumentYellow : .instrumentOrange, isOn: true, size: 4)
+            Text("PAD FIELD")
+                .font(.system(size: 7.5, weight: .semibold, design: .monospaced))
+            Text(app.isTrackpadArmed ? "MULTI-TOUCH LIVE" : "12 VOICES / 4 × 3")
+                .font(.system(size: 5.5, weight: .medium, design: .monospaced))
                 .foregroundStyle(Color.instrumentTextSecondary)
             Spacer()
             HStack(spacing: 5) {
                 ForEach(["1 2 3 4", "Q W E R", "A S D F"], id: \.self) { row in
                     Text(row)
-                        .font(.system(size: 7, weight: .medium, design: .monospaced))
-                        .padding(.horizontal, 6)
-                        .frame(height: 19)
+                        .font(.system(size: 5.5, weight: .medium, design: .monospaced))
+                        .padding(.horizontal, 4)
+                        .frame(height: 15)
                         .background(Color.instrumentRaised)
                         .overlay(Rectangle().stroke(Color.instrumentLine))
                 }
             }
         }
-        .padding(.horizontal, 12)
-        .frame(height: 36)
+        .padding(.horizontal, 7)
+        .frame(height: 24)
         .background(Color.instrumentSurface.opacity(0.55))
     }
 }
@@ -84,13 +84,13 @@ struct PadSurface: View {
 struct PadGrid: View {
     @EnvironmentObject private var app: AppState
     var interactive = true
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 5), count: 4)
 
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 10) {
+        LazyVGrid(columns: columns, spacing: 5) {
             ForEach(app.project.pads) { pad in
                 PerformancePad(pad: pad, interactive: interactive)
-                    .aspectRatio(1.95, contentMode: .fit)
+                    .aspectRatio(1.9, contentMode: .fit)
             }
         }
     }
@@ -109,10 +109,10 @@ private struct PerformancePad: View {
     var body: some View {
         GeometryReader { proxy in
             ZStack {
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
                     .fill(active ? Color.instrumentRaised : Color(red: 0.23, green: 0.235, blue: 0.225))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 4)
+                        RoundedRectangle(cornerRadius: 3)
                             .stroke(selected ? Color.padColor(pad.index) : Color.instrumentInk.opacity(0.62), lineWidth: selected ? 2 : 1)
                     )
                     .shadow(color: Color.instrumentInk.opacity(0.28), radius: 0, y: active || pointerDown ? 1 : 3)
@@ -120,32 +120,32 @@ private struct PerformancePad: View {
                     .fill(Color.padColor(pad.index))
                     .frame(height: 4)
                     .frame(maxHeight: .infinity, alignment: .top)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .clipShape(RoundedRectangle(cornerRadius: 3))
                 VStack(alignment: .leading, spacing: 3) {
                     HStack {
                         Text(String(format: "%02d", pad.index + 1))
                         Spacer()
                         Text(keyName)
-                            .frame(width: 22, height: 18)
+                            .frame(width: 17, height: 14)
                             .background(active ? Color.padColor(pad.index) : Color.instrumentRaised)
                             .overlay(Rectangle().stroke(Color.instrumentInk.opacity(0.32)))
                     }
-                    .font(.system(size: 8, weight: .medium, design: .monospaced))
+                    .font(.system(size: 6, weight: .medium, design: .monospaced))
                     .foregroundStyle(active ? Color.instrumentInk : Color.white.opacity(0.64))
                     Spacer()
                     Text(pad.name)
-                        .font(.system(size: min(12, proxy.size.width * 0.085), weight: .semibold))
+                        .font(.system(size: min(9, proxy.size.width * 0.075), weight: .semibold))
                         .foregroundStyle(active ? Color.instrumentInk : Color.white.opacity(0.88))
                         .lineLimit(1)
                     Text(pad.relativePath == nil ? "factory" : "user sample")
-                        .font(.system(size: 7, weight: .regular))
+                        .font(.system(size: 5.5, weight: .regular))
                         .foregroundStyle(active ? Color.instrumentInk.opacity(0.5) : Color.white.opacity(0.32))
                 }
-                .padding(10)
+                .padding(6)
             }
             .offset(y: active || pointerDown ? 2 : 0)
             .animation(.easeOut(duration: 0.055), value: active)
-            .contentShape(RoundedRectangle(cornerRadius: 4))
+            .contentShape(RoundedRectangle(cornerRadius: 3))
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { _ in
@@ -175,28 +175,28 @@ private struct VoiceControlDeck: View {
     private var pad: PadModel { app.selectedPad }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 6) {
             VStack(alignment: .leading, spacing: 3) {
                 HStack {
                     Text(String(format: "PAD %02d", pad.index + 1))
-                        .font(.system(size: 8, weight: .medium, design: .monospaced))
+                        .font(.system(size: 6, weight: .medium, design: .monospaced))
                         .foregroundStyle(Color.white.opacity(0.42))
                     Spacer()
-                    HardwareLED(color: Color.padColor(pad.index), isOn: true)
+                    HardwareLED(color: Color.padColor(pad.index), isOn: true, size: 4)
                 }
                 Text(pad.name)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: 9, weight: .medium))
                     .foregroundStyle(Color.instrumentYellow)
                     .lineLimit(1)
                 Text(pad.relativePath == nil ? "FACTORY VOICE" : "USER VOICE")
-                    .font(.system(size: 7, weight: .medium, design: .monospaced))
+                    .font(.system(size: 5.5, weight: .medium, design: .monospaced))
                     .foregroundStyle(Color.white.opacity(0.38))
             }
-            .padding(10)
-            .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
+            .padding(6)
+            .frame(maxWidth: .infinity, minHeight: 38, alignment: .leading)
             .background(Color.instrumentDisplay)
 
-            HStack(spacing: 22) {
+            HStack(spacing: 10) {
                 RotaryKnob(
                     "Level",
                     value: Binding(
@@ -205,7 +205,7 @@ private struct VoiceControlDeck: View {
                     ),
                     in: -24...6,
                     accent: Color.padColor(pad.index),
-                    size: 51,
+                    size: 32,
                     formatter: { "\($0.decibelString) dB" }
                 )
                 RotaryKnob(
@@ -216,7 +216,7 @@ private struct VoiceControlDeck: View {
                     ),
                     in: -1...1,
                     accent: Color.padColor(pad.index),
-                    size: 51,
+                    size: 32,
                     formatter: panText
                 )
             }
@@ -245,9 +245,9 @@ private struct VoiceControlDeck: View {
             }
 
             if pad.relativePath != nil {
-                Button("restore factory voice") { app.restoreFactoryPad() }
+                Button("RESTORE FACTORY") { app.restoreFactoryPad() }
                     .buttonStyle(.plain)
-                    .font(.system(size: 8, weight: .medium))
+                    .font(.system(size: 6, weight: .medium, design: .monospaced))
                     .foregroundStyle(Color.instrumentTextSecondary)
             }
 
@@ -256,20 +256,17 @@ private struct VoiceControlDeck: View {
 
             HStack(spacing: 7) {
                 HardwareLED(color: .instrumentOrange, isOn: app.isPatternRecording)
-                Button(app.isPatternRecording ? "Record on" : "Record") { app.isPatternRecording.toggle() }
+                Button(app.isPatternRecording ? "Rec on" : "Record") { app.isPatternRecording.toggle() }
                     .buttonStyle(InstrumentButtonStyle(accent: .instrumentOrange, isLatched: app.isPatternRecording, compact: true))
             }
-            Button(app.isTrackpadArmed ? "Disarm trackpad" : "Arm trackpad") {
+            Button(app.isTrackpadArmed ? "Trackpad off" : "Trackpad on") {
                 app.armTrackpad(!app.isTrackpadArmed)
             }
-            .buttonStyle(InstrumentButtonStyle(accent: .instrumentYellow, isLatched: app.isTrackpadArmed))
+            .buttonStyle(InstrumentButtonStyle(accent: .instrumentYellow, isLatched: app.isTrackpadArmed, compact: true))
             .keyboardShortcut("t", modifiers: [])
-            Text("The full Magic Trackpad maps to the 4 × 3 grid. Multiple fingers trigger independently.")
-                .font(.system(size: 8, weight: .regular))
-                .foregroundStyle(Color.instrumentTextSecondary)
-                .lineSpacing(2)
+            .help("Map the full Magic Trackpad to the 4 × 3 pad field. Multiple fingers trigger independently — T")
         }
-        .padding(13)
+        .padding(7)
         .background(Color.instrumentSurface.opacity(0.48))
     }
 
@@ -280,15 +277,15 @@ private struct VoiceControlDeck: View {
             Text(pad.chokeGroup.map { String($0) } ?? "off")
             Image(systemName: "chevron.up.chevron.down").font(.system(size: 7))
         }
-        .font(.system(size: 8, weight: .medium))
-        .padding(.horizontal, 9)
-        .frame(height: 26)
+        .font(.system(size: 6.5, weight: .medium))
+        .padding(.horizontal, 6)
+        .frame(height: 21)
         .background(Color.instrumentRaised)
         .overlay(Rectangle().stroke(Color.instrumentLine))
     }
 
     private func panText(_ value: Float) -> String {
-        if abs(value) < 0.02 { return "center" }
-        return value < 0 ? "L \(Int(abs(value) * 100))" : "R \(Int(value * 100))"
+        if abs(value) < 0.02 { return "C" }
+        return value < 0 ? "L\(Int(abs(value) * 100))" : "R\(Int(value * 100))"
     }
 }

@@ -9,43 +9,25 @@ struct RootView: View {
         ZStack {
             Color.instrumentBackground.ignoresSafeArea()
 
-            VStack(spacing: 11) {
+            VStack(spacing: 5) {
                 topDeck
-
-                if app.project.stems.isEmpty {
-                    IdleDisplay()
-                } else {
-                    WaveformTimeline()
-                }
-
-                Group {
-                    switch app.mode {
-                    case .mix:
-                        app.project.stems.isEmpty ? AnyView(EmptyInstrumentView()) : AnyView(MixSurface())
-                    case .pads:
-                        AnyView(PadSurface())
-                    case .pattern:
-                        AnyView(PatternSurface())
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                transportDeck
+                workspace.frame(maxWidth: .infinity, maxHeight: .infinity)
+                utilityDeck
             }
-            .padding(.horizontal, 14)
-            .padding(.top, 9)
-            .padding(.bottom, 13)
+            .padding(.horizontal, 6)
+            .padding(.top, 5)
+            .padding(.bottom, 7)
             .background(Color.instrumentSurface)
-            .overlay(Rectangle().stroke(Color.instrumentInk.opacity(0.42), lineWidth: 1))
+            .overlay(Rectangle().stroke(Color.instrumentInk.opacity(0.48), lineWidth: 1))
 
             if dropTargeted { dropOverlay }
-            if app.isImporting { WorkingOverlay(label: "Reading audio") }
+            if app.isImporting { WorkingOverlay(label: "READING AUDIO") }
             if let progress = app.exportProgress { ExportOverlay(progress: progress) }
             if app.showShortcutOverlay { ShortcutOverlay() }
             if let notice = app.notice { noticeView(notice) }
         }
         .foregroundStyle(Color.instrumentInk)
-        .animation(.easeInOut(duration: 0.12), value: app.showShortcutOverlay)
+        .animation(.easeInOut(duration: 0.1), value: app.showShortcutOverlay)
         .dropDestination(
             for: URL.self,
             action: { urls, _ in
@@ -75,6 +57,18 @@ struct RootView: View {
         }
     }
 
+    @ViewBuilder private var workspace: some View {
+        switch app.mode {
+        case .mix:
+            if app.project.stems.isEmpty { EmptyInstrumentView() }
+            else { MixSurface() }
+        case .pads:
+            PadSurface()
+        case .pattern:
+            PatternSurface()
+        }
+    }
+
     private var topDeck: some View {
         ZStack {
             if ProcessInfo.processInfo.environment["SP4_RENDERING_PREVIEW"] == "1" {
@@ -82,45 +76,39 @@ struct RootView: View {
             } else {
                 WindowDragArea()
             }
-            HStack(spacing: 13) {
+            HStack(spacing: 6) {
                 productMark
                 sessionMenu
-                Spacer(minLength: 10)
+                WaveformTimeline().frame(maxWidth: .infinity)
                 ModeSelector(selection: $app.mode)
-                Rectangle().fill(Color.instrumentLine).frame(width: 1, height: 36)
-                statusDisplay
+                Rectangle().fill(Color.instrumentLine).frame(width: 1, height: 28)
                 Button { audio.togglePlayback() } label: {
                     Image(systemName: audio.isPlaying ? "pause.fill" : "play.fill")
                         .offset(x: audio.isPlaying ? 0 : 1)
                 }
-                .buttonStyle(CircleTransportButtonStyle(tint: .instrumentOrange, size: 36))
+                .buttonStyle(CircleTransportButtonStyle(tint: .instrumentOrange, size: 30))
                 .help("Play or pause — Space")
             }
-            .padding(.leading, 64)
-            .padding(.trailing, 2)
+            .padding(.leading, 50)
+            .padding(.trailing, 1)
         }
-        .frame(height: 48)
+        .frame(height: 42)
     }
 
     private var productMark: some View {
-        HStack(spacing: 8) {
-            HStack(alignment: .bottom, spacing: 2) {
+        HStack(spacing: 5) {
+            HStack(alignment: .bottom, spacing: 1.5) {
                 ForEach(0..<4, id: \.self) { index in
                     Rectangle()
                         .fill(Color.padColor(index))
-                        .frame(width: 3.5, height: CGFloat(11 + index * 3))
+                        .frame(width: 2.5, height: CGFloat(9 + index * 2))
                 }
             }
-            VStack(alignment: .leading, spacing: 0) {
-                Text("sp–4")
-                    .font(.system(size: 17, weight: .semibold))
-                    .tracking(-0.7)
-                Text("stem instrument")
-                    .font(.system(size: 8, weight: .medium))
-                    .foregroundStyle(Color.instrumentTextSecondary)
-            }
+            Text("sp–4")
+                .font(.system(size: 14, weight: .semibold))
+                .tracking(-0.6)
         }
-        .frame(width: 108, alignment: .leading)
+        .frame(width: 55, alignment: .leading)
     }
 
     @ViewBuilder private var sessionMenu: some View {
@@ -128,27 +116,26 @@ struct RootView: View {
             sessionLabel
         } else {
             Menu {
-            Button("Import song or stems…") { app.presentAudioImporter() }
-            Button("Open project…") { app.presentProjectImporter() }
-            Divider()
-            Button("Save project as…") { app.saveProjectAs() }
-            Button("Export mix…") { app.exportMix() }
-                .disabled(app.project.stems.isEmpty)
-            if app.canSeparate {
+                Button("Import song or stems…") { app.presentAudioImporter() }
+                Button("Open project…") { app.presentProjectImporter() }
                 Divider()
-                Button("Separate song into four stems") { app.separateCurrentSong() }
-            }
-            if !app.project.stems.isEmpty {
-                Divider()
-                Menu("Channels") {
-                    ForEach(Array(app.project.stems.enumerated()), id: \.element.id) { index, stem in
-                        Button("\(index + 1)  \(stem.name)") { app.selectStem(stem.id) }
+                Button("Save project as…") { app.saveProjectAs() }
+                Button("Export mix…") { app.exportMix() }.disabled(app.project.stems.isEmpty)
+                if app.canSeparate {
+                    Divider()
+                    Button("Separate song into four stems") { app.separateCurrentSong() }
+                }
+                if !app.project.stems.isEmpty {
+                    Divider()
+                    Menu("Channels") {
+                        ForEach(Array(app.project.stems.enumerated()), id: \.element.id) { index, stem in
+                            Button("\(index + 1)  \(stem.name)") { app.selectStem(stem.id) }
+                        }
                     }
                 }
-            }
-            Divider()
-            Button("New session") { app.newSession() }
-            Button("Keyboard map") { app.showShortcutOverlay = true }
+                Divider()
+                Button("New session") { app.newSession() }
+                Button("Keyboard map") { app.showShortcutOverlay = true }
             } label: {
                 sessionLabel
             }
@@ -159,61 +146,29 @@ struct RootView: View {
     }
 
     private var sessionLabel: some View {
-        HStack(spacing: 9) {
-            HardwareLED(color: app.project.stems.isEmpty ? .instrumentOrange : .instrumentGreen, isOn: true)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(app.project.title)
-                    .font(.system(size: 10, weight: .semibold))
+        HStack(spacing: 6) {
+            HardwareLED(color: app.project.stems.isEmpty ? .instrumentOrange : .instrumentGreen, isOn: true, size: 4)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(app.project.title.uppercased())
+                    .font(.system(size: 7.5, weight: .semibold, design: .monospaced))
                     .lineLimit(1)
-                Text(app.project.stems.isEmpty ? "load audio" : "\(app.project.stems.count) channel\(app.project.stems.count == 1 ? "" : "s")")
-                    .font(.system(size: 7.5, weight: .medium))
+                Text(app.project.stems.isEmpty ? "LOAD AUDIO" : "\(app.project.stems.count) CH")
+                    .font(.system(size: 5.5, weight: .medium, design: .monospaced))
                     .foregroundStyle(Color.instrumentTextSecondary)
             }
-            Spacer(minLength: 5)
+            Spacer(minLength: 2)
             Image(systemName: "chevron.down")
-                .font(.system(size: 8, weight: .semibold))
+                .font(.system(size: 6, weight: .semibold))
                 .foregroundStyle(Color.instrumentTextSecondary)
         }
-        .padding(.horizontal, 10)
-        .frame(width: 190, height: 36)
+        .padding(.horizontal, 7)
+        .frame(width: 110, height: 30)
         .background(Color.instrumentPlate)
         .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 1))
     }
 
-    private var statusDisplay: some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(audio.currentTime.transportString)
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                .foregroundStyle(Color.instrumentYellow)
-            HStack(spacing: 5) {
-                HardwareLED(color: audio.isPlaying ? .instrumentGreen : .instrumentOrange, isOn: true, size: 5)
-                Text(statusText)
-                    .font(.system(size: 7, weight: .medium, design: .monospaced))
-                    .foregroundStyle(Color.white.opacity(0.48))
-            }
-        }
-        .padding(.horizontal, 10)
-        .frame(width: 120, height: 37, alignment: .leading)
-        .background(Color.instrumentDisplay)
-        .overlay(Rectangle().stroke(Color.instrumentInk.opacity(0.62), lineWidth: 1))
-    }
-
-    private var statusText: String {
-        switch app.separator.state {
-        case .preparing: "PREPARING"
-        case .running(let progress, _): "SPLIT \(Int(progress * 100))%"
-        case .failed: "CHECK SPLIT"
-        default:
-            app.project.stems.isEmpty ? "NO MEDIA" : (audio.isPlaying ? "RUN" : app.mode.shortName)
-        }
-    }
-
-    private var transportDeck: some View {
-        HStack(spacing: 8) {
-            Text("TRANSPORT")
-                .font(.system(size: 7, weight: .semibold))
-                .tracking(0.5)
-                .foregroundStyle(Color.instrumentTextSecondary)
+    private var utilityDeck: some View {
+        HStack(spacing: 4) {
             Button("|◀") { audio.seek(to: 0) }
                 .buttonStyle(InstrumentButtonStyle(compact: true))
                 .help("Return to start — Return")
@@ -223,24 +178,22 @@ struct RootView: View {
             Button("+5") { audio.skip(seconds: 5) }
                 .buttonStyle(InstrumentButtonStyle(compact: true))
                 .help("Forward five seconds — L")
-            Rectangle().fill(Color.instrumentLine).frame(width: 1, height: 25)
-            Button(app.project.loop.isEnabled ? "Loop on" : "Loop") { app.toggleLoop() }
+            Rectangle().fill(Color.instrumentLine).frame(width: 1, height: 16)
+            Button("Loop") { app.toggleLoop() }
                 .buttonStyle(InstrumentButtonStyle(accent: .instrumentYellow, isLatched: app.project.loop.isEnabled, compact: true))
             Button("In") { app.setLoopIn() }.buttonStyle(InstrumentButtonStyle(compact: true))
             Button("Out") { app.setLoopOut() }.buttonStyle(InstrumentButtonStyle(compact: true))
-
-            Spacer()
-
-            HStack(spacing: 4) {
+            Spacer(minLength: 3)
+            HStack(spacing: 3) {
                 ForEach(0..<4, id: \.self) { index in
-                    HardwareLED(color: Color.padColor(index), isOn: index < app.project.stems.count)
+                    HardwareLED(color: Color.padColor(index), isOn: index < app.project.stems.count, size: 4)
                 }
             }
-            Text(app.mode.detailName)
-                .font(.system(size: 8, weight: .medium))
+            Text(app.mode.detailName.uppercased())
+                .font(.system(size: 6, weight: .medium, design: .monospaced))
+                .lineLimit(1)
                 .foregroundStyle(Color.instrumentTextSecondary)
-            Spacer()
-
+            Spacer(minLength: 3)
             Button("Keys") { app.showShortcutOverlay = true }
                 .buttonStyle(InstrumentButtonStyle(compact: true))
             Button("Load") { app.presentAudioImporter() }
@@ -249,44 +202,43 @@ struct RootView: View {
                 .buttonStyle(InstrumentButtonStyle(compact: true))
                 .disabled(app.project.stems.isEmpty)
         }
-        .padding(.horizontal, 10)
-        .frame(height: 42)
+        .padding(.horizontal, 5)
+        .frame(height: 28)
         .background(Color.instrumentPlate)
         .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 1))
     }
 
     private var dropOverlay: some View {
         Rectangle()
-            .fill(Color.instrumentSurface.opacity(0.96))
-            .overlay(Rectangle().stroke(Color.instrumentOrange, style: StrokeStyle(lineWidth: 2, dash: [5, 5])).padding(18))
+            .fill(Color.instrumentSurface.opacity(0.97))
+            .overlay(Rectangle().stroke(Color.instrumentOrange, style: StrokeStyle(lineWidth: 2, dash: [4, 4])).padding(8))
             .overlay(
-                VStack(spacing: 8) {
-                    StemGlyph(size: 64)
-                    Text("Drop audio to load")
-                        .font(.system(size: 17, weight: .semibold))
-                    Text("one song or a set of prepared stems")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(Color.instrumentTextSecondary)
+                HStack(spacing: 12) {
+                    StemGlyph(size: 48)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("DROP AUDIO").font(.system(size: 13, weight: .semibold))
+                        Text("SONG OR PREPARED STEMS").font(.system(size: 7, weight: .medium, design: .monospaced))
+                            .foregroundStyle(Color.instrumentTextSecondary)
+                    }
                 }
             )
-            .padding(12)
+            .padding(6)
             .allowsHitTesting(false)
     }
 
     private func noticeView(_ notice: String) -> some View {
         VStack {
             Spacer()
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 HardwareLED(color: .instrumentGreen, isOn: true)
-                Text(notice)
-                    .font(.system(size: 9, weight: .medium))
+                Text(notice.uppercased()).font(.system(size: 7.5, weight: .medium, design: .monospaced))
             }
-            .padding(.horizontal, 13)
-            .frame(height: 32)
+            .padding(.horizontal, 10)
+            .frame(height: 24)
             .background(Color.instrumentRaised)
             .overlay(Rectangle().stroke(Color.instrumentLine))
             .shadow(color: Color.instrumentInk.opacity(0.22), radius: 0, y: 2)
-            .padding(.bottom, 12)
+            .padding(.bottom, 7)
         }
         .transition(.move(edge: .bottom).combined(with: .opacity))
         .allowsHitTesting(false)
@@ -312,58 +264,26 @@ struct StemGlyph: View {
     }
 }
 
-private struct IdleDisplay: View {
-    var body: some View {
-        HStack(spacing: 12) {
-            HStack(spacing: 3) {
-                ForEach(0..<4, id: \.self) { index in
-                    Capsule().fill(Color.padColor(index).opacity(0.55)).frame(width: 3, height: 26)
-                }
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text("NO SIGNAL")
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
-                    .foregroundStyle(Color.instrumentYellow)
-                Text("DROP A SONG OR OPEN AUDIO TO BEGIN")
-                    .font(.system(size: 7, weight: .medium, design: .monospaced))
-                    .foregroundStyle(Color.white.opacity(0.4))
-            }
-            Spacer()
-            Text("44.1 kHz  /  32-bit engine")
-                .font(.system(size: 7, weight: .medium, design: .monospaced))
-                .foregroundStyle(Color.white.opacity(0.3))
-        }
-        .padding(.horizontal, 13)
-        .frame(height: 68)
-        .background(Color.instrumentDisplay)
-        .overlay(Rectangle().stroke(Color.instrumentInk.opacity(0.62), lineWidth: 1))
-    }
-}
-
 private struct EmptyInstrumentView: View {
     @EnvironmentObject private var app: AppState
 
     var body: some View {
-        HStack(spacing: 34) {
-            StemGlyph(size: 116)
-            VStack(alignment: .leading, spacing: 13) {
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("Start with audio")
-                        .font(.system(size: 19, weight: .semibold))
-                    Text("Open one complete song or several prepared stems. WAV, AIFF, MP3, M4A, FLAC, and other common formats are accepted.")
-                        .font(.system(size: 10, weight: .regular))
-                        .foregroundStyle(Color.instrumentTextSecondary)
-                        .lineSpacing(2)
-                        .frame(maxWidth: 410, alignment: .leading)
+        HStack(spacing: 18) {
+            StemGlyph(size: 70)
+            VStack(alignment: .leading, spacing: 7) {
+                Text("LOAD AUDIO")
+                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                Text("WAV  AIFF  MP3  M4A  FLAC")
+                    .font(.system(size: 7, weight: .medium, design: .monospaced))
+                    .foregroundStyle(Color.instrumentTextSecondary)
+                HStack(spacing: 5) {
+                    Button("Load") { app.presentAudioImporter() }
+                        .buttonStyle(InstrumentButtonStyle(accent: .instrumentOrange, isLatched: true, compact: true))
+                    Button("Project") { app.presentProjectImporter() }
+                        .buttonStyle(InstrumentButtonStyle(compact: true))
                 }
-                HStack(spacing: 8) {
-                    Button("Load audio") { app.presentAudioImporter() }
-                        .buttonStyle(InstrumentButtonStyle(accent: .instrumentOrange, isLatched: true))
-                    Button("Open project") { app.presentProjectImporter() }
-                        .buttonStyle(InstrumentButtonStyle())
-                }
-                Text("Drag files anywhere onto the instrument")
-                    .font(.system(size: 8, weight: .medium))
+                Text("DROP FILES ANYWHERE")
+                    .font(.system(size: 6, weight: .medium, design: .monospaced))
                     .foregroundStyle(Color.instrumentTextSecondary)
             }
         }
@@ -379,12 +299,12 @@ private struct WorkingOverlay: View {
     var body: some View {
         ZStack {
             Color.instrumentInk.opacity(0.42).ignoresSafeArea()
-            HStack(spacing: 10) {
+            HStack(spacing: 7) {
                 ProgressView().controlSize(.small)
-                Text(label).font(.system(size: 10, weight: .medium))
+                Text(label).font(.system(size: 8, weight: .medium, design: .monospaced))
             }
-            .padding(.horizontal, 16)
-            .frame(height: 40)
+            .padding(.horizontal, 12)
+            .frame(height: 30)
             .background(Color.instrumentRaised)
             .overlay(Rectangle().stroke(Color.instrumentLine))
         }
@@ -397,19 +317,16 @@ private struct ExportOverlay: View {
     var body: some View {
         ZStack {
             Color.instrumentInk.opacity(0.52).ignoresSafeArea()
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 7) {
                 HStack {
-                    Text("Rendering mix").font(.system(size: 12, weight: .semibold))
+                    Text("RENDER MIX").font(.system(size: 9, weight: .semibold, design: .monospaced))
                     Spacer()
                     Text("\(Int(progress * 100))%")
-                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .font(.system(size: 9, weight: .medium, design: .monospaced))
                 }
-                ProgressView(value: progress).progressViewStyle(.linear).tint(.instrumentOrange).frame(width: 300)
-                Text("offline / full quality")
-                    .font(.system(size: 8, weight: .medium))
-                    .foregroundStyle(Color.instrumentTextSecondary)
+                ProgressView(value: progress).progressViewStyle(.linear).tint(.instrumentOrange).frame(width: 220)
             }
-            .padding(18)
+            .padding(13)
             .background(Color.instrumentRaised)
             .overlay(Rectangle().stroke(Color.instrumentLine))
         }

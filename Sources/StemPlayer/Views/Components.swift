@@ -8,11 +8,11 @@ struct InstrumentButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: compact ? 9 : 10, weight: .semibold))
+            .font(.system(size: compact ? 7.5 : 9, weight: .semibold))
             .textCase(.uppercase)
             .foregroundStyle(Color.instrumentInk.opacity(configuration.isPressed ? 0.62 : 0.94))
-            .padding(.horizontal, compact ? 9 : 12)
-            .frame(minHeight: compact ? 25 : 31)
+            .padding(.horizontal, compact ? 6 : 9)
+            .frame(minHeight: compact ? 20 : 26)
             .background(
                 RoundedRectangle(cornerRadius: 2, style: .continuous)
                     .fill(isLatched ? accent : Color.instrumentRaised)
@@ -29,7 +29,7 @@ struct InstrumentButtonStyle: ButtonStyle {
 
 struct CircleTransportButtonStyle: ButtonStyle {
     var tint: Color = .instrumentOrange
-    var size: CGFloat = 40
+    var size: CGFloat = 30
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -41,7 +41,7 @@ struct CircleTransportButtonStyle: ButtonStyle {
                     .fill(Color.instrumentRaised)
                     .overlay(Circle().stroke(Color.instrumentInk.opacity(0.54), lineWidth: 1))
                     .overlay(alignment: .top) {
-                        Capsule().fill(tint).frame(width: size * 0.22, height: 2).padding(.top, 5)
+                        Capsule().fill(tint).frame(width: size * 0.22, height: 2).padding(.top, 4)
                     }
                     .shadow(color: Color.instrumentInk.opacity(0.26), radius: 0, y: configuration.isPressed ? 0 : 2)
             )
@@ -53,7 +53,7 @@ struct CircleTransportButtonStyle: ButtonStyle {
 struct HardwareLED: View {
     var color: Color
     var isOn: Bool
-    var size: CGFloat = 6
+    var size: CGFloat = 5
 
     var body: some View {
         Circle()
@@ -70,17 +70,17 @@ struct LevelMeter: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let count = vertical ? 16 : 24
+            let count = vertical ? 12 : 16
             let amount = max(0, min(1, CGFloat(value)))
             Group {
                 if vertical {
-                    VStack(spacing: 1.5) {
+                    VStack(spacing: 1) {
                         ForEach((0..<count).reversed(), id: \.self) { index in
                             meterSegment(index: index, count: count, amount: amount)
                         }
                     }
                 } else {
-                    HStack(spacing: 1.5) {
+                    HStack(spacing: 1) {
                         ForEach(0..<count, id: \.self) { index in
                             meterSegment(index: index, count: count, amount: amount)
                         }
@@ -109,10 +109,10 @@ struct PhysicalFader: View {
     var body: some View {
         GeometryReader { proxy in
             let fraction = normalized(value)
-            let travel = max(1, proxy.size.height - 28)
-            let knobY = (1 - fraction) * travel + 14
+            let travel = max(1, proxy.size.height - 18)
+            let knobY = (1 - fraction) * travel + 9
             ZStack(alignment: .top) {
-                HStack(spacing: 7) {
+                HStack(spacing: 4) {
                     scaleMarks
                     Capsule()
                         .fill(Color.instrumentInk.opacity(0.88))
@@ -122,28 +122,28 @@ struct PhysicalFader: View {
                         }
                     scaleMarks
                 }
-                .padding(.vertical, 7)
+                .padding(.vertical, 5)
 
                 RoundedRectangle(cornerRadius: 2, style: .continuous)
                     .fill(Color.instrumentRaised)
                     .overlay(RoundedRectangle(cornerRadius: 2).stroke(Color.instrumentInk.opacity(0.68), lineWidth: 1))
-                    .overlay(Rectangle().fill(tint).frame(width: 28, height: 2))
+                    .overlay(Rectangle().fill(tint).frame(width: 21, height: 1.5))
                     .overlay {
-                        HStack(spacing: 3) {
-                            ForEach(0..<5, id: \.self) { _ in
-                                Rectangle().fill(Color.instrumentInk.opacity(0.2)).frame(width: 1, height: 11)
+                        HStack(spacing: 2) {
+                            ForEach(0..<4, id: \.self) { _ in
+                                Rectangle().fill(Color.instrumentInk.opacity(0.2)).frame(width: 1, height: 7)
                             }
                         }
                     }
-                    .frame(width: 38, height: 25)
-                    .shadow(color: .black.opacity(0.25), radius: 0, y: 2)
+                    .frame(width: 27, height: 16)
+                    .shadow(color: .black.opacity(0.22), radius: 0, y: 1)
                     .position(x: proxy.size.width / 2, y: knobY)
             }
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0).onChanged { gesture in
-                    let y = max(14, min(proxy.size.height - 14, gesture.location.y))
-                    let newFraction = 1 - (y - 14) / max(1, proxy.size.height - 28)
+                    let y = max(9, min(proxy.size.height - 9, gesture.location.y))
+                    let newFraction = 1 - (y - 9) / max(1, proxy.size.height - 18)
                     value = range.lowerBound + Float(newFraction) * (range.upperBound - range.lowerBound)
                 }
             )
@@ -194,7 +194,7 @@ struct RotaryKnob: View {
         in range: ClosedRange<Float>,
         default defaultValue: Float = 0,
         accent: Color = .instrumentOrange,
-        size: CGFloat = 46,
+        size: CGFloat = 34,
         formatter: @escaping (Float) -> String = { String(format: "%.2f", $0) }
     ) {
         self.title = title
@@ -207,23 +207,23 @@ struct RotaryKnob: View {
     }
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 2) {
             ZStack {
                 ForEach(0..<9, id: \.self) { index in
                     Capsule()
                         .fill(index == 4 ? accent : Color.instrumentInk.opacity(0.3))
-                        .frame(width: 1.2, height: index == 4 ? 5 : 3)
+                        .frame(width: 1, height: index == 4 ? 4 : 2)
                         .offset(y: -size * 0.48)
                         .rotationEffect(.degrees(-135 + Double(index) * 33.75))
                 }
                 Circle()
                     .fill(Color.instrumentInk)
                     .overlay(Circle().stroke(Color.black.opacity(0.45), lineWidth: 1))
-                    .shadow(color: Color.instrumentInk.opacity(0.25), radius: 0, y: 2)
+                    .shadow(color: Color.instrumentInk.opacity(0.22), radius: 0, y: 1)
                     .frame(width: size * 0.72, height: size * 0.72)
                 Capsule()
                     .fill(accent)
-                    .frame(width: 2, height: size * 0.22)
+                    .frame(width: 1.5, height: size * 0.22)
                     .offset(y: -size * 0.16)
                     .rotationEffect(.degrees(angle))
             }
@@ -243,11 +243,11 @@ struct RotaryKnob: View {
             .onTapGesture(count: 2) { value = defaultValue }
 
             Text(title.uppercased())
-                .font(.system(size: 7, weight: .semibold))
-                .tracking(0.45)
+                .font(.system(size: 6, weight: .semibold))
+                .tracking(0.3)
                 .foregroundStyle(Color.instrumentTextSecondary)
             Text(formatter(value))
-                .font(.system(size: 8, weight: .medium, design: .monospaced))
+                .font(.system(size: 7, weight: .medium, design: .monospaced))
                 .foregroundStyle(Color.instrumentInk)
                 .lineLimit(1)
         }
@@ -274,7 +274,7 @@ struct ModeSelector: View {
     @Binding var selection: WorkspaceMode
 
     var body: some View {
-        VStack(spacing: 5) {
+        VStack(spacing: 3) {
             GeometryReader { proxy in
                 let modes = WorkspaceMode.allCases
                 let slot = proxy.size.width / CGFloat(modes.count)
@@ -283,14 +283,14 @@ struct ModeSelector: View {
                     Capsule()
                         .fill(Color.instrumentInk.opacity(0.14))
                         .overlay(Capsule().stroke(Color.instrumentInk.opacity(0.26), lineWidth: 1))
-                        .frame(height: 12)
+                        .frame(height: 8)
                         .padding(.horizontal, slot * 0.24)
                     RoundedRectangle(cornerRadius: 3, style: .continuous)
                         .fill(Color.instrumentInk)
                         .overlay(alignment: .top) {
-                            Capsule().fill(selection.accent).frame(width: 11, height: 2.5).padding(.top, 4)
+                            Capsule().fill(selection.accent).frame(width: 8, height: 2).padding(.top, 3)
                         }
-                        .frame(width: slot * 0.62, height: 25)
+                        .frame(width: slot * 0.62, height: 18)
                         .offset(x: CGFloat(selectedIndex) * slot + slot * 0.19)
                         .shadow(color: Color.instrumentInk.opacity(0.2), radius: 0, y: 2)
                 }
@@ -303,18 +303,18 @@ struct ModeSelector: View {
                     }
                 )
             }
-            .frame(height: 27)
+            .frame(height: 20)
 
             HStack(spacing: 0) {
                 ForEach(WorkspaceMode.allCases) { mode in
                     Text(mode.shortName)
-                        .font(.system(size: 7, weight: selection == mode ? .bold : .medium))
+                        .font(.system(size: 6, weight: selection == mode ? .bold : .medium))
                         .foregroundStyle(selection == mode ? Color.instrumentInk : Color.instrumentTextSecondary)
                         .frame(maxWidth: .infinity)
                 }
             }
         }
-        .frame(width: 154, height: 42)
+        .frame(width: 92, height: 31)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Instrument mode")
         .accessibilityValue(selection.detailName)
@@ -336,9 +336,9 @@ struct KeyCap: View {
 
     var body: some View {
         Text(text.uppercased())
-            .font(.system(size: 8, weight: .semibold, design: .monospaced))
+            .font(.system(size: 7, weight: .semibold, design: .monospaced))
             .foregroundStyle(Color.instrumentInk)
-            .frame(minWidth: wide ? 54 : 24, minHeight: 21)
+            .frame(minWidth: wide ? 44 : 18, minHeight: 17)
             .padding(.horizontal, wide ? 4 : 0)
             .background(
                 RoundedRectangle(cornerRadius: 2)
