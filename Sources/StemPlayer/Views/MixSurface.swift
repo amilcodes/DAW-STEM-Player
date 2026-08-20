@@ -4,135 +4,115 @@ struct MixSurface: View {
     @EnvironmentObject private var app: AppState
     @EnvironmentObject private var audio: AudioEngineController
 
-    private var slotCount: Int { max(4, app.project.stems.count) }
+    private var visibleSlots: Int { min(4, max(4, app.project.stems.count)) }
 
     var body: some View {
-        VStack(spacing: 0) {
-            if slotCount <= 4 {
-                VStack(spacing: 0) {
-                    ForEach(0..<slotCount, id: \.self) { index in
-                        channel(index: index)
-                        if index < slotCount - 1 { Rectangle().fill(Color.instrumentLine).frame(height: 1) }
-                    }
+        HStack(spacing: 0) {
+            ForEach(0..<visibleSlots, id: \.self) { index in
+                if app.project.stems.indices.contains(index) {
+                    let stem = app.project.stems[index]
+                    ChannelStrip(
+                        index: index,
+                        stem: stem,
+                        meter: audio.meters[stem.id] ?? .init()
+                    )
+                } else {
+                    EmptyChannelStrip(index: index)
                 }
-            } else {
-                ScrollView(.vertical) {
-                    LazyVStack(spacing: 0) {
-                        ForEach(0..<slotCount, id: \.self) { index in
-                            channel(index: index).frame(height: 76)
-                            Rectangle().fill(Color.instrumentLine).frame(height: 1)
-                        }
-                    }
+
+                if index < visibleSlots - 1 {
+                    Rectangle()
+                        .fill(Color.instrumentInk.opacity(0.1))
+                        .frame(width: 0.7)
+                        .padding(.vertical, 5)
                 }
-                .scrollIndicators(.hidden)
             }
         }
-        .background(Color.instrumentPlate.opacity(0.52))
-        .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 0.7))
     }
-
-    @ViewBuilder private func channel(index: Int) -> some View {
-        if app.project.stems.indices.contains(index) {
-            let stem = app.project.stems[index]
-            StemChannelRow(index: index, stem: stem, meter: audio.meters[stem.id] ?? .init())
-                .frame(maxHeight: .infinity)
-        } else {
-            EmptyChannelRow(index: index).frame(maxHeight: .infinity)
-        }
-    }
-
 }
 
-private struct StemChannelRow: View {
+private struct ChannelStrip: View {
     @EnvironmentObject private var app: AppState
     let index: Int
     let stem: StemModel
     let meter: AudioEngineController.Meter
 
     private var isSelected: Bool { app.selectedStemID == stem.id }
-    private var controlTint: Color {
-        isSelected ? .instrumentOrange : .instrumentInk.opacity(0.55)
-    }
+    private var tint: Color { isSelected ? .instrumentOrange : .instrumentInk.opacity(0.6) }
 
     var body: some View {
-        HStack(spacing: 4) {
-            Rectangle()
-                .fill(isSelected ? Color.instrumentOrange : Color.instrumentInk.opacity(0.13))
-                .frame(width: 2)
-
+        VStack(spacing: 5) {
             Button { app.selectStem(stem.id) } label: {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 3) {
-                        Text(String(format: "%02d", index + 1))
-                        HardwareLED(color: .instrumentOrange, isOn: isSelected, size: 3)
-                    }
-                    .font(.instrumentNumber(5.5, weight: .medium))
-                    .foregroundStyle(Color.instrumentTextSecondary)
-                    Text(stem.name)
-                        .font(.instrument(8, weight: .regular))
-                        .lineLimit(1)
+                HStack(spacing: 3) {
+                    Text(String(format: "%02d", index + 1))
+                        .font(.instrumentNumber(5.5, weight: .medium))
+                        .foregroundStyle(Color.instrumentTextSecondary)
+                    Spacer(minLength: 0)
+                    HardwareLED(color: .instrumentOrange, isOn: isSelected, size: 3)
                 }
-                .frame(width: 47, alignment: .leading)
             }
             .buttonStyle(.plain)
 
-            LevelMeter(value: meter.peak, tint: controlTint)
-                .frame(width: 6, height: 50)
+            Text(stem.name)
+                .font(.instrument(7.5, weight: .regular))
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-            HorizontalFader(
-                value: Binding(
-                    get: { stem.gainDB },
-                    set: { value in app.updateStem(stem.id) { $0.gainDB = value } }
-                ),
-                tint: controlTint
-            )
-            .frame(minWidth: 46, maxWidth: .infinity, minHeight: 28, maxHeight: 32)
+            HStack(spacing: 1) {
+                RotaryKnob(
+                    "pan",
+                    value: Binding(
+                        get: { stem.pan },
+                        set: { value in app.updateStem(stem.id) { $0.pan = value } }
+                    ),
+                    in: -1...1,
+                    accent: tint,
+                    size: 28,
+                    formatter: panText
+                )
+                RotaryKnob(
+                    "tone",
+                    value: Binding(
+                        get: { stem.tone },
+                        set: { value in app.updateStem(stem.id) { $0.tone = value } }
+                    ),
+                    in: -1...1,
+                    accent: tint,
+                    size: 28,
+                    formatter: toneText
+                )
+            }
+
+            HStack(spacing: 1) {
+                PhysicalFader(
+                    value: Binding(
+                        get: { stem.gainDB },
+                        set: { value in app.updateStem(stem.id) { $0.gainDB = value } }
+                    ),
+                    tint: tint
+                )
+                .frame(maxWidth: .infinity)
+
+                LevelMeter(value: meter.peak, tint: tint)
+                    .frame(width: 6)
+            }
+            .frame(maxHeight: .infinity)
 
             Text(stem.gainDB.decibelString)
-                .font(.instrumentNumber(6.5, weight: .medium))
-                .foregroundStyle(isSelected ? Color.instrumentOrange : Color.white.opacity(0.58))
-            .padding(.horizontal, 4)
-            .frame(width: 31, height: 21, alignment: .leading)
-            .background(Color.instrumentDisplay)
+                .font(.instrumentNumber(7, weight: .medium))
+                .foregroundStyle(isSelected ? Color.instrumentOrange : Color.instrumentInk.opacity(0.74))
 
-            RotaryKnob(
-                "Pan",
-                value: Binding(
-                    get: { stem.pan },
-                    set: { value in app.updateStem(stem.id) { $0.pan = value } }
-                ),
-                in: -1...1,
-                accent: controlTint,
-                size: 24,
-                formatter: panText
-            )
-            RotaryKnob(
-                "Tone",
-                value: Binding(
-                    get: { stem.tone },
-                    set: { value in app.updateStem(stem.id) { $0.tone = value } }
-                ),
-                in: -1...1,
-                accent: controlTint,
-                size: 24,
-                formatter: toneText
-            )
-
-            VStack(spacing: 2) {
+            HStack(spacing: 3) {
                 Button("m") { app.updateStem(stem.id) { $0.isMuted.toggle() } }
-                    .buttonStyle(InstrumentButtonStyle(accent: .instrumentOrange, isLatched: stem.isMuted, compact: true))
+                    .buttonStyle(HardwareKeyStyle(width: 25, height: 24, accent: .instrumentOrange, isLatched: stem.isMuted))
                     .help("Mute selected stem — M")
                 Button("s") { app.updateStem(stem.id) { $0.isSolo.toggle() } }
-                    .buttonStyle(InstrumentButtonStyle(accent: .instrumentOrange, isLatched: stem.isSolo, compact: true))
+                    .buttonStyle(HardwareKeyStyle(width: 25, height: 24, accent: .instrumentOrange, isLatched: stem.isSolo))
                     .help("Solo selected stem — S")
-                Button("↺") { app.resetStem(stem.id) }
-                    .buttonStyle(InstrumentButtonStyle(compact: true))
-                    .help("Reset channel")
             }
         }
         .padding(.horizontal, 5)
-        .padding(.vertical, 4)
-        .background(isSelected ? Color.instrumentInk.opacity(0.045) : Color.clear)
+        .padding(.vertical, 3)
         .contentShape(Rectangle())
         .onTapGesture { app.selectStem(stem.id) }
         .contextMenu {
@@ -157,22 +137,23 @@ private struct StemChannelRow: View {
     }
 }
 
-private struct EmptyChannelRow: View {
+private struct EmptyChannelStrip: View {
     let index: Int
 
     var body: some View {
-        HStack(spacing: 6) {
-            Rectangle().fill(Color.instrumentInk.opacity(0.12)).frame(width: 2)
+        VStack(spacing: 8) {
             Text(String(format: "%02d", index + 1))
-            Text("empty")
+                .font(.instrumentNumber(5.5, weight: .medium))
             Spacer()
-            Capsule().fill(Color.instrumentInk.opacity(0.09)).frame(width: 116, height: 3)
+            Capsule()
+                .fill(Color.instrumentInk.opacity(0.08))
+                .frame(width: 3, height: 132)
             Spacer()
-            HStack(spacing: 2) { KeyCap(text: "M"); KeyCap(text: "S"); KeyCap(text: "↺") }.opacity(0.24)
+            Text("–")
+                .font(.instrument(8, weight: .regular))
         }
-        .font(.instrument(6, weight: .regular))
-        .foregroundStyle(Color.instrumentTextSecondary.opacity(0.62))
-        .padding(.horizontal, 5)
-        .padding(.vertical, 4)
+        .foregroundStyle(Color.instrumentTextSecondary.opacity(0.45))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.vertical, 5)
     }
 }

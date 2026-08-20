@@ -32,16 +32,11 @@ if CommandLine.arguments.count >= 5, CommandLine.arguments[1] == "--icns" {
 guard CommandLine.arguments.count == 2 else { fputs("usage: render-icon <output.png>\n", stderr); exit(2) }
 
 let canvas = NSSize(width: 1024, height: 1024)
-let ink = NSColor(red: 0.106, green: 0.110, blue: 0.102, alpha: 1)
-let enclosure = NSColor(red: 0.710, green: 0.694, blue: 0.647, alpha: 1)
-let face = NSColor(red: 0.831, green: 0.812, blue: 0.753, alpha: 1)
-let raised = NSColor(red: 0.925, green: 0.906, blue: 0.847, alpha: 1)
-let colors = [
-    NSColor(red: 0.937, green: 0.306, blue: 0.122, alpha: 1),
-    NSColor(red: 0.953, green: 0.729, blue: 0.125, alpha: 1),
-    NSColor(red: 0.290, green: 0.631, blue: 0.349, alpha: 1),
-    NSColor(red: 0.161, green: 0.427, blue: 0.729, alpha: 1)
-]
+let ink = NSColor(red: 0.075, green: 0.078, blue: 0.075, alpha: 1)
+let enclosure = NSColor(red: 0.76, green: 0.76, blue: 0.73, alpha: 1)
+let face = NSColor(red: 0.91, green: 0.90, blue: 0.87, alpha: 1)
+let raised = NSColor(red: 0.975, green: 0.97, blue: 0.945, alpha: 1)
+let orange = NSColor(red: 0.92, green: 0.255, blue: 0.13, alpha: 1)
 
 func fill(_ path: NSBezierPath, _ color: NSColor) {
     color.setFill()
@@ -58,37 +53,57 @@ let image = NSImage(size: canvas, flipped: false) { _ in
     let outside = NSBezierPath(roundedRect: NSRect(x: 0, y: 0, width: 1024, height: 1024), xRadius: 220, yRadius: 220)
     fill(outside, enclosure)
 
-    let border = NSBezierPath(roundedRect: NSRect(x: 40, y: 40, width: 944, height: 944), xRadius: 185, yRadius: 185)
-    stroke(border, ink, width: 18)
+    let faceplate = NSBezierPath(roundedRect: NSRect(x: 34, y: 34, width: 956, height: 956), xRadius: 190, yRadius: 190)
+    fill(faceplate, face)
+    stroke(faceplate, ink.withAlphaComponent(0.38), width: 10)
 
-    for point in [NSPoint(x: 104, y: 104), NSPoint(x: 920, y: 104), NSPoint(x: 104, y: 920), NSPoint(x: 920, y: 920)] {
-        fill(NSBezierPath(ovalIn: NSRect(x: point.x - 18, y: point.y - 18, width: 36, height: 36)), ink.withAlphaComponent(0.42))
+    let screen = NSBezierPath(roundedRect: NSRect(x: 132, y: 650, width: 760, height: 190), xRadius: 34, yRadius: 34)
+    fill(screen, ink)
+
+    let waveform = NSBezierPath()
+    waveform.move(to: NSPoint(x: 172, y: 738))
+    let wavePoints: [CGFloat] = [0, 18, -9, 31, -20, 12, -5, 40, -14, 7, -27, 22, -8, 34, -17, 10, 0]
+    for (index, value) in wavePoints.enumerated() {
+        waveform.line(to: NSPoint(x: 172 + CGFloat(index) * 42, y: 738 + value))
+    }
+    stroke(waveform, orange, width: 10)
+
+    fill(NSBezierPath(ovalIn: NSRect(x: 836, y: 786, width: 18, height: 18)), orange)
+
+    let faderCenters: [CGFloat] = [250, 425, 600, 775]
+    let handlePositions: [CGFloat] = [476, 410, 344, 446]
+    for (index, centerX) in faderCenters.enumerated() {
+        let rail = NSBezierPath(roundedRect: NSRect(x: centerX - 10, y: 220, width: 20, height: 350), xRadius: 10, yRadius: 10)
+        fill(rail, ink)
+
+        for tick in 0..<5 {
+            let y = 236 + CGFloat(tick) * 76
+            let left = NSBezierPath(rect: NSRect(x: centerX - 48, y: y, width: 22, height: 5))
+            let right = NSBezierPath(rect: NSRect(x: centerX + 26, y: y, width: 22, height: 5))
+            fill(left, ink.withAlphaComponent(0.22))
+            fill(right, ink.withAlphaComponent(0.22))
+        }
+
+        let handle = NSBezierPath(roundedRect: NSRect(x: centerX - 48, y: handlePositions[index], width: 96, height: 52), xRadius: 8, yRadius: 8)
+        fill(handle, raised)
+        stroke(handle, ink.withAlphaComponent(0.48), width: 6)
+
+        let mark = NSBezierPath(rect: NSRect(x: centerX - 32, y: handlePositions[index] + 24, width: 64, height: 5))
+        fill(mark, index == 0 ? orange : ink.withAlphaComponent(0.44))
     }
 
-    let body = NSBezierPath(ovalIn: NSRect(x: 186, y: 186, width: 652, height: 652))
-    fill(body, face)
-    stroke(body, ink, width: 18)
-
-    let arms = [
-        NSRect(x: 478, y: 592, width: 68, height: 214),
-        NSRect(x: 592, y: 478, width: 214, height: 68),
-        NSRect(x: 478, y: 218, width: 68, height: 214),
-        NSRect(x: 218, y: 478, width: 214, height: 68)
-    ]
-    for (index, rect) in arms.enumerated() {
-        let path = NSBezierPath(roundedRect: rect, xRadius: 10, yRadius: 10)
-        fill(path, colors[index])
-        stroke(path, ink, width: 8)
+    for x in [190, 310, 430] as [CGFloat] {
+        let key = NSBezierPath(roundedRect: NSRect(x: x, y: 100, width: 90, height: 76), xRadius: 12, yRadius: 12)
+        fill(key, raised)
+        stroke(key, ink.withAlphaComponent(0.28), width: 5)
     }
 
-    let center = NSBezierPath(ovalIn: NSRect(x: 380, y: 380, width: 264, height: 264))
-    fill(center, raised)
-    stroke(center, ink, width: 16)
-
+    let playKey = NSBezierPath(roundedRect: NSRect(x: 710, y: 92, width: 132, height: 92), xRadius: 15, yRadius: 15)
+    fill(playKey, orange)
     let play = NSBezierPath()
-    play.move(to: NSPoint(x: 482, y: 446))
-    play.line(to: NSPoint(x: 598, y: 512))
-    play.line(to: NSPoint(x: 482, y: 578))
+    play.move(to: NSPoint(x: 760, y: 116))
+    play.line(to: NSPoint(x: 809, y: 138))
+    play.line(to: NSPoint(x: 760, y: 160))
     play.close()
     fill(play, ink)
     return true

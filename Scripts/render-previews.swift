@@ -60,9 +60,14 @@ struct PreviewRenderer {
         app.waveforms = Dictionary(uniqueKeysWithValues: stems.enumerated().map { index, stem in
             let peaks = (0..<420).map { sample -> Float in
                 let x = Double(sample) / 420
-                let carrier = abs(sin(x * Double.pi * Double(18 + index * 5)))
-                let envelope = 0.22 + 0.72 * abs(sin(x * Double.pi * Double(2 + index)))
-                return Float(min(1, carrier * envelope * (0.74 + Double(index) * 0.05)))
+                let carrier = abs(
+                    sin(x * Double.pi * Double(17 + index * 4) + sin(x * 19) * 0.7)
+                    + 0.28 * sin(x * Double.pi * Double(43 + index * 7))
+                )
+                let envelope = 0.16
+                    + 0.48 * abs(sin(x * Double.pi * Double(2 + index)))
+                    + 0.26 * pow(abs(sin(x * Double.pi * 7.3)), 5)
+                return Float(min(1, carrier * envelope * (0.68 + Double(index) * 0.04)))
             }
             return (stem.id, peaks)
         })

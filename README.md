@@ -4,7 +4,7 @@
 
 # Stem Player for macOS
 
-A narrow 320 × 520-point native macOS instrument for playing, separating, mixing, looping, sequencing, and exporting song stems. A MacBook trackpad or Magic Trackpad becomes a 4 × 3 multitouch drum surface.
+A narrow 320 × 520-point native macOS instrument for playing, separating, mixing, looping, sequencing, and exporting song stems. Its interface is built as one continuous hardware faceplate. A MacBook trackpad or Magic Trackpad becomes a 4 × 3 multitouch drum surface.
 
 ![Four-channel stem mixer](docs/images/mix.png)
 
@@ -13,7 +13,7 @@ A narrow 320 × 520-point native macOS instrument for playing, separating, mixin
 - Keep the whole instrument visible in one dense vertical control surface that occupies little desktop space.
 - Import one song or several prepared stems.
 - Play up to four main stems in sync: drums, vocals, other, and bass.
-- Control level, pan, tone, mute, and solo directly on each channel strip.
+- Control level, pan, tone, mute, and solo on four vertical channel strips.
 - Seek on the waveform and set loop points.
 - Separate a song locally with a Core ML model.
 - Play twelve drum pads with the mouse, keyboard, or simultaneous trackpad touches.
@@ -74,7 +74,7 @@ AVFoundation handles WAV, AIFF, CAF, MP3, M4A, and other formats supported by ma
 
 ## Separate a song
 
-Import one complete song and press **split** in the bottom key row, or choose **Separate song into four stems** from the session menu. The Rust helper runs the Core ML separation model and returns four files:
+Import one complete song, open the round menu key at the top right, and choose **Separate song into four stems**. The Rust helper runs the Core ML separation model and returns four files:
 
 - Drums
 - Vocals
@@ -152,6 +152,6 @@ The test command runs the Rust worker tests and a native Swift integration binar
 
 ## Design note
 
-The interface uses the physical Stem Player's four-part control model and the discipline of compact field hardware: one flush display, contiguous control grids, short signal paths, neutral materials, one action color, and no page furniture. Labels use Helvetica Neue; measured values use SF Mono. It does not copy product assets or software from Stem Player or Teenage Engineering.
+The interface uses the physical Stem Player's four-part control model and the discipline of compact field hardware: one aluminum-like faceplate, one recessed display, vertical signal strips, tactile key grids, short signal paths, neutral materials, and one action color. Labels use Helvetica Neue; measured values use SF Mono. It does not copy product assets or software from Stem Player or Teenage Engineering.
 
 This is an independent project. It is not affiliated with or endorsed by Kano, Yeezy, or Teenage Engineering.

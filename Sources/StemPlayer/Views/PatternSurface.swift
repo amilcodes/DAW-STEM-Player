@@ -22,15 +22,10 @@ struct PatternSurface: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 8) {
             sequencerGrid
-                .padding(.horizontal, 4)
-                .padding(.vertical, 4)
-            Rectangle().fill(Color.instrumentLine).frame(height: 1)
             parameterDeck
         }
-        .background(Color.instrumentPlate.opacity(0.52))
-        .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 0.7))
         .onChange(of: app.selectedPadIndex) { _, index in
             voiceBank = max(0, min(2, index / 4))
         }
@@ -38,25 +33,22 @@ struct PatternSurface: View {
 
     private var sequencerGrid: some View {
         GeometryReader { proxy in
-            let labelWidth: CGFloat = 43
-            let gap: CGFloat = 1
+            let labelWidth: CGFloat = 39
+            let gap: CGFloat = 1.5
             let stepWidth = max(8, (proxy.size.width - labelWidth - gap * 15) / 16)
-            VStack(spacing: 3) {
+
+            VStack(spacing: 5) {
                 HStack(spacing: gap) {
                     Text(["A", "B", "C"][voiceBank])
                         .frame(width: labelWidth, alignment: .leading)
                     ForEach(0..<16, id: \.self) { step in
-                        VStack(spacing: 1) {
-                            Text(step % 4 == 0 ? "\(step / 4 + 1)" : "·")
-                            Rectangle()
-                                .fill(currentStep == step ? Color.instrumentOrange : Color.clear)
-                                .frame(height: 1.5)
-                        }
-                        .frame(width: stepWidth)
+                        Text(step.isMultiple(of: 4) ? "\(step / 4 + 1)" : "·")
+                            .frame(width: stepWidth)
                     }
                 }
                 .font(.instrumentNumber(5, weight: .medium))
                 .foregroundStyle(Color.instrumentTextSecondary)
+                .frame(height: 8)
 
                 ForEach(bankPads) { pad in
                     HStack(spacing: gap) {
@@ -64,21 +56,17 @@ struct PatternSurface: View {
                             app.selectPad(pad.index)
                             app.triggerPad(index: pad.index)
                         } label: {
-                            HStack(spacing: 3) {
-                                Rectangle()
-                                    .fill(app.selectedPadIndex == pad.index ? Color.instrumentOrange : Color.instrumentInk.opacity(0.14))
-                                    .frame(width: 2, height: 18)
-                                VStack(alignment: .leading, spacing: 1) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 3) {
                                     Text(String(format: "%02d", pad.index + 1))
                                         .font(.instrumentNumber(4.5, weight: .medium))
-                                        .foregroundStyle(Color.instrumentTextSecondary)
-                                    Text(shortName(pad.name))
-                                        .font(.instrument(5.5, weight: .regular))
-                                        .lineLimit(1)
+                                    HardwareLED(color: .instrumentOrange, isOn: app.selectedPadIndex == pad.index, size: 3)
                                 }
-                                Spacer(minLength: 0)
-                                HardwareLED(color: .instrumentOrange, isOn: app.selectedPadIndex == pad.index, size: 3)
+                                Text(shortName(pad.name))
+                                    .font(.instrument(5.5, weight: .regular))
+                                    .lineLimit(1)
                             }
+                            .foregroundStyle(Color.instrumentInk.opacity(0.74))
                             .frame(width: labelWidth, alignment: .leading)
                         }
                         .buttonStyle(.plain)
@@ -110,10 +98,10 @@ struct PatternSurface: View {
     }
 
     private var parameterDeck: some View {
-        VStack(spacing: 3) {
+        VStack(spacing: 5) {
             HStack(spacing: 5) {
                 RotaryKnob(
-                    "Tempo",
+                    "tempo",
                     value: Binding(
                         get: { Float(app.project.pattern.bpm) },
                         set: { app.setPatternBPM(Double($0)) }
@@ -121,49 +109,48 @@ struct PatternSurface: View {
                     in: 40...240,
                     default: 100,
                     accent: .instrumentOrange,
-                    size: 26,
+                    size: 29,
                     formatter: { "\(Int($0))" }
                 )
                 RotaryKnob(
-                    "Swing",
+                    "swing",
                     value: Binding(
                         get: { Float(app.project.pattern.swing) },
                         set: { app.setPatternSwing(Double($0)) }
                     ),
                     in: 0...0.75,
-                    accent: .instrumentInk.opacity(0.58),
-                    size: 26,
+                    accent: .instrumentInk.opacity(0.62),
+                    size: 29,
                     formatter: { "\(Int($0 * 100))%" }
                 )
-                Rectangle().fill(Color.instrumentLine).frame(width: 1, height: 33)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("bars")
-                        .font(.instrument(5, weight: .medium))
-                        .foregroundStyle(Color.instrumentTextSecondary)
+
+                Rectangle().fill(Color.instrumentLine).frame(width: 0.7, height: 38)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("bars").font(.instrument(5, weight: .regular)).foregroundStyle(Color.instrumentTextSecondary)
                     HStack(spacing: 2) {
                         Button("−") { app.setPatternBars(app.project.pattern.bars - 1) }
-                            .buttonStyle(InstrumentButtonStyle(compact: true))
+                            .buttonStyle(HardwareKeyStyle(width: 23, height: 24))
                         Text("\(app.project.pattern.bars)")
                             .font(.instrumentNumber(7, weight: .medium))
-                            .frame(width: 12)
+                            .frame(width: 10)
                         Button("+") { app.setPatternBars(app.project.pattern.bars + 1) }
-                            .buttonStyle(InstrumentButtonStyle(compact: true))
+                            .buttonStyle(HardwareKeyStyle(width: 23, height: 24))
                     }
                 }
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("bar")
-                        .font(.instrument(5, weight: .medium))
-                        .foregroundStyle(Color.instrumentTextSecondary)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("bar").font(.instrument(5, weight: .regular)).foregroundStyle(Color.instrumentTextSecondary)
                     HStack(spacing: 2) {
                         Button("◀") { app.selectPatternBar(app.selectedPatternBar - 1) }
                             .disabled(app.selectedPatternBar == 0)
-                            .buttonStyle(InstrumentButtonStyle(compact: true))
+                            .buttonStyle(HardwareKeyStyle(width: 23, height: 24))
                         Text("\(app.selectedPatternBar + 1)/\(app.project.pattern.bars)")
                             .font(.instrumentNumber(6.5, weight: .medium))
-                            .frame(width: 23)
+                            .frame(width: 22)
                         Button("▶") { app.selectPatternBar(app.selectedPatternBar + 1) }
                             .disabled(app.selectedPatternBar >= app.project.pattern.bars - 1)
-                            .buttonStyle(InstrumentButtonStyle(compact: true))
+                            .buttonStyle(HardwareKeyStyle(width: 23, height: 24))
                     }
                 }
                 Spacer(minLength: 0)
@@ -171,35 +158,27 @@ struct PatternSurface: View {
 
             HStack(spacing: 4) {
                 Button("run") { app.isPatternEnabled.toggle() }
-                    .buttonStyle(InstrumentButtonStyle(accent: .instrumentGreen, isLatched: app.isPatternEnabled, compact: true))
-                Button("record") { app.isPatternRecording.toggle() }
-                    .buttonStyle(InstrumentButtonStyle(accent: .instrumentOrange, isLatched: app.isPatternRecording, compact: true))
+                    .buttonStyle(HardwareKeyStyle(width: 38, height: 25, accent: .instrumentGreen, isLatched: app.isPatternEnabled))
+                Button("rec") { app.isPatternRecording.toggle() }
+                    .buttonStyle(HardwareKeyStyle(width: 36, height: 25, accent: .instrumentOrange, isLatched: app.isPatternRecording))
                 Spacer(minLength: 0)
                 ForEach(0..<3, id: \.self) { bank in
                     Button(["A", "B", "C"][bank]) { voiceBank = bank }
-                        .buttonStyle(
-                            InstrumentButtonStyle(
-                                accent: .instrumentOrange,
-                                isLatched: voiceBank == bank,
-                                compact: true
-                            )
-                        )
+                        .buttonStyle(HardwareKeyStyle(width: 25, height: 25, accent: .instrumentOrange, isLatched: voiceBank == bank))
                 }
-                Button("clear") { app.clearPattern() }
-                    .buttonStyle(InstrumentButtonStyle(compact: true))
+                Button("clr") { app.clearPattern() }
+                    .buttonStyle(HardwareKeyStyle(width: 32, height: 25))
+                    .help("Clear pattern")
             }
         }
-        .padding(.horizontal, 5)
-        .padding(.vertical, 4)
-        .frame(height: 78)
-        .background(Color.instrumentSurface.opacity(0.48))
+        .frame(height: 91)
     }
 
     private func shortName(_ name: String) -> String {
         switch name {
-        case "Closed Hat": "Cl Hat"
-        case "Open Hat": "Op Hat"
-        default: name
+        case "Closed Hat": "cl hat"
+        case "Open Hat": "op hat"
+        default: name.lowercased()
         }
     }
 }
@@ -212,24 +191,37 @@ private struct StepKey: View {
     let action: () -> Void
     let setVelocity: (Float?) -> Void
 
+    private var velocityMarks: Int {
+        guard let velocity else { return 0 }
+        if velocity > 0.8 { return 3 }
+        if velocity > 0.5 { return 2 }
+        return 1
+    }
+
     var body: some View {
         Button(action: action) {
             ZStack(alignment: .bottom) {
-                RoundedRectangle(cornerRadius: 1.5, style: .continuous)
-                    .fill(fillColor)
+                RoundedRectangle(cornerRadius: 2.5, style: .continuous)
+                    .fill(velocity == nil ? Color.instrumentRaised : Color.instrumentInk.opacity(0.82))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 1.5)
-                            .stroke(isCurrent ? Color.instrumentOrange : Color.instrumentInk.opacity(0.22), lineWidth: isCurrent ? 1.2 : 0.6)
+                        RoundedRectangle(cornerRadius: 2.5)
+                            .stroke(Color.instrumentInk.opacity(velocity == nil ? 0.17 : 0.62), lineWidth: 0.7)
                     )
-                if let velocity {
-                    Rectangle()
-                        .fill(Color.instrumentRaised.opacity(0.75))
-                        .frame(height: max(1.5, CGFloat(velocity) * 5))
-                        .padding(.horizontal, 1.5)
-                        .padding(.bottom, 2)
-                }
-                if step.isMultiple(of: 4) {
-                    Rectangle().fill(Color.instrumentInk.opacity(0.3)).frame(width: 1.5, height: 1.5).padding(.bottom, 2)
+                    .overlay(alignment: .top) {
+                        if isCurrent {
+                            Capsule().fill(Color.instrumentOrange).frame(width: max(4, width * 0.5), height: 1.5).padding(.top, 2)
+                        }
+                    }
+
+                if velocityMarks > 0 {
+                    HStack(spacing: 1) {
+                        ForEach(0..<velocityMarks, id: \.self) { _ in
+                            Circle().fill(Color.instrumentRaised.opacity(0.78)).frame(width: 1.5, height: 1.5)
+                        }
+                    }
+                    .padding(.bottom, 3)
+                } else if step.isMultiple(of: 4) {
+                    Circle().fill(Color.instrumentInk.opacity(0.2)).frame(width: 2, height: 2).padding(.bottom, 3)
                 }
             }
             .frame(width: width)
@@ -246,12 +238,5 @@ private struct StepKey: View {
         }
         .accessibilityLabel("Step \(step + 1)")
         .accessibilityValue(velocity.map { "Velocity \(Int($0 * 100)) percent" } ?? "Off")
-    }
-
-    private var fillColor: Color {
-        guard let velocity else {
-            return Color.instrumentInk.opacity(step.isMultiple(of: 4) ? 0.12 : 0.075)
-        }
-        return Color.instrumentInk.opacity(0.38 + Double(velocity) * 0.42)
     }
 }

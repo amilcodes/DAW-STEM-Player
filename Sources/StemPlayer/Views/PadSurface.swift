@@ -4,53 +4,52 @@ struct PadSurface: View {
     @EnvironmentObject private var app: AppState
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 9) {
             GeometryReader { proxy in
                 ZStack {
-                    PadGrid(interactive: !app.isTrackpadArmed, rowHeight: 69)
-                        .padding(5)
+                    PadGrid(interactive: !app.isTrackpadArmed, rowHeight: 66)
+
                     if app.isTrackpadArmed {
                         TrackpadTouchView(
                             onBegan: app.trackpadTouchBegan,
                             onMoved: app.trackpadTouchMoved,
                             onEnded: app.trackpadTouchEnded
                         )
+
                         ForEach(app.trackpadTouches) { touch in
                             ZStack {
-                                Circle().fill(Color.instrumentRaised.opacity(0.84))
-                                Circle().stroke(Color.padColor(touch.padIndex), lineWidth: 2)
+                                Circle().fill(Color.instrumentInk.opacity(0.84))
+                                Circle().stroke(Color.instrumentOrange, lineWidth: 1)
                                 Text("\(touch.padIndex + 1)")
-                                    .font(.instrumentNumber(7, weight: .medium))
+                                    .font(.instrumentNumber(6, weight: .medium))
+                                    .foregroundStyle(Color.instrumentRaised)
                             }
-                            .frame(width: 22, height: 22)
+                            .frame(width: 19, height: 19)
                             .position(
                                 x: touch.normalizedX * proxy.size.width,
                                 y: (1 - touch.normalizedY) * proxy.size.height
                             )
                             .allowsHitTesting(false)
                         }
-                        VStack {
-                            Spacer()
-                            Text("touch · esc")
-                                .font(.instrument(5.5, weight: .medium))
-                                .foregroundStyle(Color.instrumentRaised)
-                                .padding(.horizontal, 6)
-                                .frame(height: 15)
-                                .background(Color.instrumentInk.opacity(0.84))
-                        }
-                        .padding(5)
-                        .allowsHitTesting(false)
+
+                        Text("touch")
+                            .font(.instrument(5.5, weight: .medium))
+                            .foregroundStyle(Color.instrumentRaised.opacity(0.76))
+                            .padding(.horizontal, 6)
+                            .frame(height: 14)
+                            .background(Color.instrumentInk.opacity(0.86))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                            .padding(4)
+                            .allowsHitTesting(false)
                     }
                 }
             }
-            .frame(height: 227)
-            Rectangle().fill(Color.instrumentLine).frame(height: 1)
-            VoiceControlDeck().frame(height: 103)
-        }
-        .background(Color.instrumentPlate.opacity(0.52))
-        .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 0.7))
-    }
+            .frame(height: 206)
 
+            VoiceControlDeck()
+                .frame(height: 139)
+        }
+    }
 }
 
 struct PadGrid: View {
@@ -80,59 +79,51 @@ private struct PerformancePad: View {
     private var keyName: String { ["1", "2", "3", "4", "Q", "W", "E", "R", "A", "S", "D", "F"][pad.index] }
 
     var body: some View {
-        GeometryReader { proxy in
-            ZStack {
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
-                    .fill(active ? Color.instrumentRaised : Color.instrumentDisplay.opacity(0.86))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 2)
-                            .stroke(selected ? Color.instrumentOrange : Color.white.opacity(0.09), lineWidth: selected ? 1 : 0.6)
-                    )
-                if selected {
-                    Rectangle()
-                        .fill(Color.instrumentOrange)
-                        .frame(height: 2)
-                        .frame(maxHeight: .infinity, alignment: .top)
-                }
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        Text(String(format: "%02d", pad.index + 1))
-                        Spacer()
-                        Text(keyName)
-                            .frame(width: 15, height: 12)
-                            .background(active ? Color.instrumentInk : Color.instrumentRaised.opacity(0.84))
-                            .foregroundStyle(active ? Color.instrumentRaised : Color.instrumentInk)
-                            .overlay(Rectangle().stroke(Color.white.opacity(active ? 0 : 0.1), lineWidth: 0.6))
+        ZStack {
+            RoundedRectangle(cornerRadius: 5, style: .continuous)
+                .fill(active ? Color.instrumentInk : Color.instrumentRaised)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5)
+                        .stroke(Color.instrumentInk.opacity(active ? 0.7 : 0.18), lineWidth: 0.7)
+                )
+                .overlay(alignment: .bottom) {
+                    if !active {
+                        Capsule().fill(Color.instrumentInk.opacity(0.1)).frame(width: 22, height: 1).padding(.bottom, 3)
                     }
-                    .font(.instrumentNumber(5.5, weight: .medium))
-                    .foregroundStyle(active ? Color.instrumentInk : Color.white.opacity(0.48))
+                }
+
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text(String(format: "%02d", pad.index + 1))
+                        .font(.instrumentNumber(5, weight: .medium))
                     Spacer()
-                    Text(pad.name)
-                        .font(.instrument(min(8, proxy.size.width * 0.11), weight: .regular))
-                        .foregroundStyle(active ? Color.instrumentInk : Color.white.opacity(0.88))
-                        .lineLimit(1)
+                    HardwareLED(color: .instrumentOrange, isOn: selected, size: 3)
                 }
-                .padding(5)
+                Spacer()
+                Text(keyName)
+                    .font(.instrument(8, weight: .medium))
             }
-            .offset(y: active || pointerDown ? 1 : 0)
-            .animation(.easeOut(duration: 0.055), value: active)
-            .contentShape(RoundedRectangle(cornerRadius: 2))
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { _ in
-                        guard interactive, !pointerDown else { return }
-                        pointerDown = true
-                        app.selectPad(pad.index)
-                        app.triggerPad(index: pad.index, hold: true)
-                    }
-                    .onEnded { _ in
-                        guard pointerDown else { return }
-                        pointerDown = false
-                        app.releasePad(index: pad.index)
-                    }
-            )
-            .onTapGesture { app.selectPad(pad.index) }
+            .foregroundStyle(active ? Color.instrumentRaised : Color.instrumentInk.opacity(0.66))
+            .padding(7)
         }
+        .offset(y: active || pointerDown ? 0.7 : 0)
+        .animation(.easeOut(duration: 0.05), value: active)
+        .contentShape(RoundedRectangle(cornerRadius: 5))
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    guard interactive, !pointerDown else { return }
+                    pointerDown = true
+                    app.selectPad(pad.index)
+                    app.triggerPad(index: pad.index, hold: true)
+                }
+                .onEnded { _ in
+                    guard pointerDown else { return }
+                    pointerDown = false
+                    app.releasePad(index: pad.index)
+                }
+        )
+        .onTapGesture { app.selectPad(pad.index) }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Pad \(pad.index + 1), \(pad.name)")
         .accessibilityAddTraits(active ? [.isButton, .isSelected] : .isButton)
@@ -146,75 +137,77 @@ private struct VoiceControlDeck: View {
     private var pad: PadModel { app.selectedPad }
 
     var body: some View {
-        VStack(spacing: 5) {
-            HStack(spacing: 5) {
+        VStack(spacing: 7) {
+            HStack(spacing: 6) {
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        Text(pad.name)
-                            .font(.instrument(8, weight: .regular))
-                            .foregroundStyle(Color.instrumentRaised.opacity(0.88))
-                            .lineLimit(1)
-                        Spacer()
+                    HStack(spacing: 4) {
+                        Text(String(format: "%02d", pad.index + 1))
+                            .font(.instrumentNumber(5.5, weight: .medium))
+                            .foregroundStyle(Color.white.opacity(0.36))
                         HardwareLED(color: .instrumentOrange, isOn: true, size: 3)
                     }
+                    Spacer(minLength: 0)
+                    Text(pad.name.lowercased())
+                        .font(.instrument(8, weight: .regular))
+                        .foregroundStyle(Color.instrumentRaised.opacity(0.86))
+                        .lineLimit(1)
                     Text(pad.relativePath == nil ? "factory" : "sample")
                         .font(.instrument(5, weight: .regular))
-                        .foregroundStyle(Color.white.opacity(0.38))
+                        .foregroundStyle(Color.white.opacity(0.32))
                 }
-                .padding(5)
-                .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-                .background(Color.instrumentDisplay)
+                .padding(7)
+                .frame(maxWidth: .infinity, minHeight: 57, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 3).fill(Color.instrumentDisplay))
 
                 RotaryKnob(
-                    "Level",
+                    "level",
                     value: Binding(
                         get: { app.selectedPad.gainDB },
                         set: { value in app.updateSelectedPad { $0.gainDB = value } }
                     ),
                     in: -24...6,
                     accent: .instrumentOrange,
-                    size: 32,
+                    size: 31,
                     formatter: { $0.decibelString }
                 )
                 RotaryKnob(
-                    "Pan",
+                    "pan",
                     value: Binding(
                         get: { app.selectedPad.pan },
                         set: { value in app.updateSelectedPad { $0.pan = value } }
                     ),
                     in: -1...1,
-                    accent: .instrumentInk.opacity(0.58),
-                    size: 32,
+                    accent: .instrumentInk.opacity(0.62),
+                    size: 31,
                     formatter: panText
                 )
 
                 VStack(spacing: 3) {
-                    Button("preview") { app.triggerPad(index: pad.index) }
-                        .buttonStyle(InstrumentButtonStyle(accent: .instrumentOrange, compact: true))
-                    Button("load") { app.loadSampleForSelectedPad() }
-                        .buttonStyle(InstrumentButtonStyle(compact: true))
+                    Button("▶") { app.triggerPad(index: pad.index) }
+                        .buttonStyle(HardwareKeyStyle(width: 30, height: 27, accent: .instrumentOrange, isPrimary: true))
+                        .help("Preview selected pad")
+                    Button("↓") { app.loadSampleForSelectedPad() }
+                        .buttonStyle(HardwareKeyStyle(width: 30, height: 27))
+                        .help("Load a sample")
                 }
             }
 
             HStack(spacing: 4) {
                 chokeControl
-                Button("record") { app.isPatternRecording.toggle() }
-                    .buttonStyle(InstrumentButtonStyle(accent: .instrumentOrange, isLatched: app.isPatternRecording, compact: true))
+                Button("rec") { app.isPatternRecording.toggle() }
+                    .buttonStyle(HardwareKeyStyle(width: 38, height: 25, accent: .instrumentOrange, isLatched: app.isPatternRecording))
                 Button("touch") { app.armTrackpad(!app.isTrackpadArmed) }
-                    .buttonStyle(InstrumentButtonStyle(accent: .instrumentOrange, isLatched: app.isTrackpadArmed, compact: true))
+                    .buttonStyle(HardwareKeyStyle(width: 43, height: 25, accent: .instrumentOrange, isLatched: app.isTrackpadArmed))
                     .keyboardShortcut("t", modifiers: [])
                     .help("Map the full Magic Trackpad to the 4 × 3 field — T")
+                Spacer(minLength: 0)
                 if pad.relativePath != nil {
                     Button("↺") { app.restoreFactoryPad() }
-                        .buttonStyle(InstrumentButtonStyle(compact: true))
-                    .help("Restore factory voice")
+                        .buttonStyle(HardwareKeyStyle(width: 25, height: 25))
+                        .help("Restore factory voice")
                 }
             }
-
         }
-        .padding(5)
-        .frame(maxWidth: .infinity, alignment: .top)
-        .background(Color.instrumentSurface.opacity(0.48))
     }
 
     @ViewBuilder private var chokeControl: some View {
@@ -237,13 +230,17 @@ private struct VoiceControlDeck: View {
     private var chokeLabel: some View {
         HStack(spacing: 3) {
             Text("choke")
-            Text(pad.chokeGroup.map { String($0) } ?? "–")
+            Text(pad.chokeGroup.map(String.init) ?? "–")
+                .font(.instrumentNumber(6, weight: .medium))
         }
         .font(.instrument(6, weight: .medium))
-        .padding(.horizontal, 5)
-        .frame(height: 20)
-        .background(Color.instrumentRaised)
-        .overlay(Rectangle().stroke(Color.instrumentLine))
+        .padding(.horizontal, 7)
+        .frame(height: 25)
+        .background(
+            RoundedRectangle(cornerRadius: 3)
+                .fill(Color.instrumentRaised)
+                .overlay(RoundedRectangle(cornerRadius: 3).stroke(Color.instrumentInk.opacity(0.18), lineWidth: 0.7))
+        )
     }
 
     private func panText(_ value: Float) -> String {

@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.6.0
+
+- Rebuilt the window as one continuous rounded hardware faceplate instead of stacked software panels.
+- Moved the project name, channel count, playback state, waveform, and time into one recessed display.
+- Replaced the mode slider with three discrete physical selectors.
+- Rebuilt the mixer as four vertical channel strips with rotary controls, long-throw faders, meters, and tactile mute and solo keys.
+- Rebuilt the drum surface as twelve blank physical keys with a separate voice display and direct sample controls.
+- Rebuilt the sequencer as a 4 × 16 hardware button matrix with small velocity marks and no software bars.
+- Combined transport, loop points, import, and export into one compact hardware key rail.
+- Replaced the old multicolor app icon with the finished instrument face.
+
 ## 2.5.0
 
 - Replaced the mixed display typography with Helvetica Neue for controls and SF Mono only for measured values.

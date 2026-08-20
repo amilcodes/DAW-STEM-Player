@@ -9,19 +9,31 @@ struct RootView: View {
         ZStack {
             Color.instrumentBackground.ignoresSafeArea()
 
-            VStack(spacing: 3) {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.instrumentSurface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(Color.instrumentInk.opacity(0.2), lineWidth: 0.7)
+                )
+                .padding(3)
+
+            VStack(spacing: 0) {
                 deviceHeader
+                    .fixedSize(horizontal: false, vertical: true)
                 WaveformTimeline()
-                modeDeck
-                workspace.frame(maxWidth: .infinity, maxHeight: .infinity)
-                transportDeck
-                fileDeck
+                    .fixedSize(horizontal: false, vertical: true)
+                GeometryReader { proxy in
+                    workspace
+                        .frame(width: proxy.size.width, height: proxy.size.height)
+                }
+                .padding(.vertical, 8)
+                Rectangle().fill(Color.instrumentLine).frame(height: 0.7)
+                commandRail
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, 5)
-            .padding(.top, 4)
+            .padding(.horizontal, 10)
+            .padding(.top, 7)
             .padding(.bottom, 6)
-            .background(Color.instrumentSurface)
-            .overlay(Rectangle().stroke(Color.instrumentInk.opacity(0.28), lineWidth: 0.7))
 
             if dropTargeted { dropOverlay }
             if app.isImporting { WorkingOverlay(label: "READING AUDIO") }
@@ -81,34 +93,29 @@ struct RootView: View {
             }
             HStack(spacing: 6) {
                 productMark
-                sessionMenu
                 Spacer(minLength: 0)
-                Button { audio.togglePlayback() } label: {
-                    Image(systemName: audio.isPlaying ? "pause.fill" : "play.fill")
-                        .offset(x: audio.isPlaying ? 0 : 1)
-                }
-                .buttonStyle(CircleTransportButtonStyle(tint: .instrumentOrange, size: 28))
-                .help("Play or pause — Space")
+                ModeSelector(selection: $app.mode)
+                sessionMenu
             }
-            .padding(.leading, 48)
-            .padding(.trailing, 1)
         }
-        .frame(height: 34)
+        .frame(height: 37)
     }
 
     private var productMark: some View {
-        HStack(spacing: 4) {
-            Rectangle().fill(Color.instrumentOrange).frame(width: 2, height: 14)
+        VStack(alignment: .leading, spacing: 0) {
             Text("sp–4")
-                .font(.instrument(13, weight: .medium))
-                .tracking(-0.4)
+                .font(.instrument(11, weight: .medium))
+                .tracking(-0.3)
+            Text("field instrument")
+                .font(.instrument(5, weight: .regular))
+                .foregroundStyle(Color.instrumentTextSecondary)
         }
-        .frame(width: 49, alignment: .leading)
+        .frame(width: 69, alignment: .leading)
     }
 
     @ViewBuilder private var sessionMenu: some View {
         if ProcessInfo.processInfo.environment["SP4_RENDERING_PREVIEW"] == "1" {
-            sessionLabel
+            sessionMenuLabel
         } else {
             Menu {
                 Button("Import song or stems…") { app.presentAudioImporter() }
@@ -132,7 +139,7 @@ struct RootView: View {
                 Button("New session") { app.newSession() }
                 Button("Keyboard map") { app.showShortcutOverlay = true }
             } label: {
-                sessionLabel
+                sessionMenuLabel
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
@@ -140,102 +147,73 @@ struct RootView: View {
         }
     }
 
-    private var sessionLabel: some View {
-        HStack(spacing: 5) {
-            HardwareLED(color: app.project.stems.isEmpty ? .instrumentOrange : .instrumentGreen, isOn: true, size: 3)
-            Text(app.project.title)
-                .font(.instrument(7.5, weight: .medium))
-                .lineLimit(1)
-            Spacer(minLength: 1)
-            Text(app.project.stems.isEmpty ? "–" : "\(app.project.stems.count)")
-                .font(.instrumentNumber(6, weight: .medium))
-                .foregroundStyle(Color.instrumentTextSecondary)
-            Image(systemName: "chevron.down")
-                .font(.instrument(5, weight: .medium))
-                .foregroundStyle(Color.instrumentTextSecondary)
+    private var sessionMenuLabel: some View {
+        ZStack {
+            Circle()
+                .fill(Color.instrumentRaised)
+                .overlay(Circle().stroke(Color.instrumentInk.opacity(0.24), lineWidth: 0.7))
+            HStack(spacing: 1.5) {
+                ForEach(0..<3, id: \.self) { _ in
+                    Circle().fill(Color.instrumentInk.opacity(0.66)).frame(width: 2, height: 2)
+                }
+            }
         }
-        .padding(.horizontal, 6)
-        .frame(width: 108, height: 27)
-        .background(Color.instrumentRaised.opacity(0.72))
-        .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 0.7))
+        .frame(width: 22, height: 22)
     }
 
-    private var modeDeck: some View {
-        HStack {
-            HardwareLED(color: audio.isPlaying ? .instrumentGreen : .instrumentInk, isOn: true, size: 3)
-            Spacer(minLength: 0)
-            ModeSelector(selection: $app.mode)
-            Spacer(minLength: 0)
-            Color.clear.frame(width: 3, height: 3)
-        }
-        .padding(.horizontal, 7)
-        .frame(height: 31)
-        .background(Color.instrumentPlate.opacity(0.48))
-        .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 0.7))
-    }
-
-    private var transportDeck: some View {
-        HStack(spacing: 4) {
+    private var commandRail: some View {
+        HStack(spacing: 3) {
             Button("|◀") { audio.seek(to: 0) }
-                .buttonStyle(InstrumentButtonStyle(compact: true))
+                .buttonStyle(HardwareKeyStyle())
                 .help("Return to start — Return")
             Button("−5") { audio.skip(seconds: -5) }
-                .buttonStyle(InstrumentButtonStyle(compact: true))
+                .buttonStyle(HardwareKeyStyle())
                 .help("Back five seconds — J")
-            Button("+5") { audio.skip(seconds: 5) }
-                .buttonStyle(InstrumentButtonStyle(compact: true))
-                .help("Forward five seconds — L")
-            Spacer(minLength: 0)
-            Button("loop") { app.toggleLoop() }
-                .buttonStyle(InstrumentButtonStyle(accent: .instrumentOrange, isLatched: app.project.loop.isEnabled, compact: true))
-            Button("in") { app.setLoopIn() }.buttonStyle(InstrumentButtonStyle(compact: true))
-            Button("out") { app.setLoopOut() }.buttonStyle(InstrumentButtonStyle(compact: true))
-        }
-        .padding(.horizontal, 4)
-        .frame(height: 26)
-        .background(Color.instrumentPlate.opacity(0.62))
-        .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 0.7))
-    }
-
-    private var fileDeck: some View {
-        HStack(spacing: 4) {
-            HardwareLED(color: app.project.stems.isEmpty ? .instrumentInk : .instrumentOrange, isOn: true, size: 3)
-            Text(app.project.stems.isEmpty ? "–" : "\(app.project.stems.count)")
-                .font(.instrumentNumber(6, weight: .medium))
-                .foregroundStyle(Color.instrumentTextSecondary)
-            if app.canSeparate {
-                Button("split") { app.separateCurrentSong() }
-                    .buttonStyle(InstrumentButtonStyle(accent: .instrumentOrange, compact: true))
+            Button { audio.togglePlayback() } label: {
+                Image(systemName: audio.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 8, weight: .semibold))
+                    .offset(x: audio.isPlaying ? 0 : 0.5)
             }
-            Spacer(minLength: 0)
-            Button("keys") { app.showShortcutOverlay = true }
-                .buttonStyle(InstrumentButtonStyle(compact: true))
-            Button("load") { app.presentAudioImporter() }
-                .buttonStyle(InstrumentButtonStyle(accent: .instrumentOrange, compact: true))
-            Button("export") { app.exportMix() }
-                .buttonStyle(InstrumentButtonStyle(compact: true))
+            .buttonStyle(HardwareKeyStyle(width: 32, accent: .instrumentOrange, isPrimary: true))
+            .help("Play or pause — Space")
+            Button("+5") { audio.skip(seconds: 5) }
+                .buttonStyle(HardwareKeyStyle())
+                .help("Forward five seconds — L")
+            Spacer(minLength: 3)
+            Button("↻") { app.toggleLoop() }
+                .buttonStyle(HardwareKeyStyle(accent: .instrumentOrange, isLatched: app.project.loop.isEnabled))
+                .help("Loop — Command-L")
+            Button("I") { app.setLoopIn() }
+                .buttonStyle(HardwareKeyStyle(width: 25))
+                .help("Set loop in — I")
+            Button("O") { app.setLoopOut() }
+                .buttonStyle(HardwareKeyStyle(width: 25))
+                .help("Set loop out — O")
+            Spacer(minLength: 3)
+            Button("↓") { app.presentAudioImporter() }
+                .buttonStyle(HardwareKeyStyle())
+                .help("Load audio — Command-O")
+            Button("↑") { app.exportMix() }
+                .buttonStyle(HardwareKeyStyle())
                 .disabled(app.project.stems.isEmpty)
+                .help("Export mix — Command-E")
         }
-        .padding(.horizontal, 4)
-        .frame(height: 26)
-        .background(Color.instrumentPlate.opacity(0.62))
-        .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 0.7))
+        .frame(height: 39)
     }
 
     private var dropOverlay: some View {
         Rectangle()
-            .fill(Color.instrumentSurface.opacity(0.97))
-            .overlay(Rectangle().stroke(Color.instrumentOrange, style: StrokeStyle(lineWidth: 2, dash: [4, 4])).padding(7))
+            .fill(Color.instrumentSurface.opacity(0.985))
+            .overlay(Rectangle().fill(Color.instrumentOrange).frame(width: 2).padding(.vertical, 12), alignment: .leading)
             .overlay(
                 VStack(spacing: 8) {
-                    StemGlyph(size: 52)
                     Text("drop audio").font(.instrument(12, weight: .medium))
                     Text("song or prepared stems")
                         .font(.instrument(6.5, weight: .regular))
                         .foregroundStyle(Color.instrumentTextSecondary)
                 }
             )
-            .padding(5)
+            .padding(10)
             .allowsHitTesting(false)
     }
 
@@ -257,28 +235,11 @@ struct RootView: View {
     }
 }
 
-struct StemGlyph: View {
-    var size: CGFloat
-
-    var body: some View {
-        ZStack {
-            Circle().fill(Color.instrumentRaised).overlay(Circle().stroke(Color.instrumentInk.opacity(0.42), lineWidth: 1))
-            Capsule()
-                .fill(Color.instrumentOrange)
-                .frame(width: size * 0.055, height: size * 0.25)
-                .offset(y: -size * 0.2)
-            Circle().fill(Color.instrumentInk).frame(width: size * 0.23, height: size * 0.23)
-        }
-        .frame(width: size, height: size)
-    }
-}
-
 private struct EmptyInstrumentView: View {
     @EnvironmentObject private var app: AppState
 
     var body: some View {
         VStack(spacing: 9) {
-            StemGlyph(size: 64)
             Text("load audio")
                 .font(.instrument(11, weight: .medium))
             Text("wav · aiff · mp3 · m4a · flac")
@@ -286,17 +247,15 @@ private struct EmptyInstrumentView: View {
                 .foregroundStyle(Color.instrumentTextSecondary)
             HStack(spacing: 5) {
                 Button("load") { app.presentAudioImporter() }
-                    .buttonStyle(InstrumentButtonStyle(accent: .instrumentOrange, isLatched: true, compact: true))
+                    .buttonStyle(HardwareKeyStyle(width: 48, height: 28, accent: .instrumentOrange, isPrimary: true))
                 Button("project") { app.presentProjectImporter() }
-                    .buttonStyle(InstrumentButtonStyle(compact: true))
+                    .buttonStyle(HardwareKeyStyle(width: 52, height: 28))
             }
             Text("drop files anywhere")
                 .font(.instrument(6, weight: .regular))
                 .foregroundStyle(Color.instrumentTextSecondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.instrumentPlate.opacity(0.36))
-        .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 1))
     }
 }
 
