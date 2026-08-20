@@ -9,16 +9,19 @@ struct RootView: View {
         ZStack {
             Color.instrumentBackground.ignoresSafeArea()
 
-            VStack(spacing: 5) {
-                topDeck
+            VStack(spacing: 4) {
+                deviceHeader
+                WaveformTimeline()
+                modeDeck
                 workspace.frame(maxWidth: .infinity, maxHeight: .infinity)
-                utilityDeck
+                transportDeck
+                fileDeck
             }
-            .padding(.horizontal, 6)
-            .padding(.top, 5)
-            .padding(.bottom, 7)
+            .padding(.horizontal, 5)
+            .padding(.top, 4)
+            .padding(.bottom, 6)
             .background(Color.instrumentSurface)
-            .overlay(Rectangle().stroke(Color.instrumentInk.opacity(0.48), lineWidth: 1))
+            .overlay(Rectangle().stroke(Color.instrumentInk.opacity(0.5), lineWidth: 1))
 
             if dropTargeted { dropOverlay }
             if app.isImporting { WorkingOverlay(label: "READING AUDIO") }
@@ -69,7 +72,7 @@ struct RootView: View {
         }
     }
 
-    private var topDeck: some View {
+    private var deviceHeader: some View {
         ZStack {
             if ProcessInfo.processInfo.environment["SP4_RENDERING_PREVIEW"] == "1" {
                 Color.clear
@@ -79,36 +82,34 @@ struct RootView: View {
             HStack(spacing: 6) {
                 productMark
                 sessionMenu
-                WaveformTimeline().frame(maxWidth: .infinity)
-                ModeSelector(selection: $app.mode)
-                Rectangle().fill(Color.instrumentLine).frame(width: 1, height: 28)
+                Spacer(minLength: 0)
                 Button { audio.togglePlayback() } label: {
                     Image(systemName: audio.isPlaying ? "pause.fill" : "play.fill")
                         .offset(x: audio.isPlaying ? 0 : 1)
                 }
-                .buttonStyle(CircleTransportButtonStyle(tint: .instrumentOrange, size: 30))
+                .buttonStyle(CircleTransportButtonStyle(tint: .instrumentOrange, size: 28))
                 .help("Play or pause — Space")
             }
-            .padding(.leading, 50)
+            .padding(.leading, 48)
             .padding(.trailing, 1)
         }
-        .frame(height: 42)
+        .frame(height: 34)
     }
 
     private var productMark: some View {
-        HStack(spacing: 5) {
-            HStack(alignment: .bottom, spacing: 1.5) {
+        HStack(spacing: 4) {
+            HStack(alignment: .bottom, spacing: 1.2) {
                 ForEach(0..<4, id: \.self) { index in
                     Rectangle()
                         .fill(Color.padColor(index))
-                        .frame(width: 2.5, height: CGFloat(9 + index * 2))
+                        .frame(width: 2.3, height: CGFloat(8 + index * 2))
                 }
             }
             Text("sp–4")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))
                 .tracking(-0.6)
         }
-        .frame(width: 55, alignment: .leading)
+        .frame(width: 49, alignment: .leading)
     }
 
     @ViewBuilder private var sessionMenu: some View {
@@ -146,28 +147,50 @@ struct RootView: View {
     }
 
     private var sessionLabel: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 5) {
             HardwareLED(color: app.project.stems.isEmpty ? .instrumentOrange : .instrumentGreen, isOn: true, size: 4)
             VStack(alignment: .leading, spacing: 0) {
                 Text(app.project.title.uppercased())
-                    .font(.system(size: 7.5, weight: .semibold, design: .monospaced))
+                    .font(.system(size: 7, weight: .semibold, design: .monospaced))
                     .lineLimit(1)
-                Text(app.project.stems.isEmpty ? "LOAD AUDIO" : "\(app.project.stems.count) CH")
-                    .font(.system(size: 5.5, weight: .medium, design: .monospaced))
+                Text(app.project.stems.isEmpty ? "LOAD" : "\(app.project.stems.count) CHANNEL")
+                    .font(.system(size: 5, weight: .medium, design: .monospaced))
                     .foregroundStyle(Color.instrumentTextSecondary)
             }
-            Spacer(minLength: 2)
+            Spacer(minLength: 1)
             Image(systemName: "chevron.down")
-                .font(.system(size: 6, weight: .semibold))
+                .font(.system(size: 5.5, weight: .semibold))
                 .foregroundStyle(Color.instrumentTextSecondary)
         }
-        .padding(.horizontal, 7)
-        .frame(width: 110, height: 30)
+        .padding(.horizontal, 6)
+        .frame(width: 108, height: 27)
         .background(Color.instrumentPlate)
         .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 1))
     }
 
-    private var utilityDeck: some View {
+    private var modeDeck: some View {
+        HStack(spacing: 6) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(app.mode.detailName.uppercased())
+                    .font(.system(size: 6, weight: .semibold, design: .monospaced))
+                    .lineLimit(1)
+                HStack(spacing: 3) {
+                    HardwareLED(color: audio.isPlaying ? .instrumentGreen : app.mode.accent, isOn: true, size: 3)
+                    Text(audio.isPlaying ? "RUN" : "READY")
+                        .font(.system(size: 5, weight: .medium, design: .monospaced))
+                        .foregroundStyle(Color.instrumentTextSecondary)
+                }
+            }
+            Spacer(minLength: 0)
+            ModeSelector(selection: $app.mode)
+        }
+        .padding(.horizontal, 7)
+        .frame(height: 31)
+        .background(Color.instrumentPlate.opacity(0.72))
+        .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 1))
+    }
+
+    private var transportDeck: some View {
         HStack(spacing: 4) {
             Button("|◀") { audio.seek(to: 0) }
                 .buttonStyle(InstrumentButtonStyle(compact: true))
@@ -178,22 +201,29 @@ struct RootView: View {
             Button("+5") { audio.skip(seconds: 5) }
                 .buttonStyle(InstrumentButtonStyle(compact: true))
                 .help("Forward five seconds — L")
-            Rectangle().fill(Color.instrumentLine).frame(width: 1, height: 16)
+            Spacer(minLength: 0)
             Button("Loop") { app.toggleLoop() }
                 .buttonStyle(InstrumentButtonStyle(accent: .instrumentYellow, isLatched: app.project.loop.isEnabled, compact: true))
             Button("In") { app.setLoopIn() }.buttonStyle(InstrumentButtonStyle(compact: true))
             Button("Out") { app.setLoopOut() }.buttonStyle(InstrumentButtonStyle(compact: true))
-            Spacer(minLength: 3)
+        }
+        .padding(.horizontal, 4)
+        .frame(height: 26)
+        .background(Color.instrumentPlate)
+        .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 1))
+    }
+
+    private var fileDeck: some View {
+        HStack(spacing: 4) {
             HStack(spacing: 3) {
                 ForEach(0..<4, id: \.self) { index in
                     HardwareLED(color: Color.padColor(index), isOn: index < app.project.stems.count, size: 4)
                 }
             }
-            Text(app.mode.detailName.uppercased())
-                .font(.system(size: 6, weight: .medium, design: .monospaced))
-                .lineLimit(1)
+            Text(app.project.stems.isEmpty ? "EMPTY" : "\(app.project.stems.count)CH")
+                .font(.system(size: 5.5, weight: .medium, design: .monospaced))
                 .foregroundStyle(Color.instrumentTextSecondary)
-            Spacer(minLength: 3)
+            Spacer(minLength: 0)
             Button("Keys") { app.showShortcutOverlay = true }
                 .buttonStyle(InstrumentButtonStyle(compact: true))
             Button("Load") { app.presentAudioImporter() }
@@ -202,8 +232,8 @@ struct RootView: View {
                 .buttonStyle(InstrumentButtonStyle(compact: true))
                 .disabled(app.project.stems.isEmpty)
         }
-        .padding(.horizontal, 5)
-        .frame(height: 28)
+        .padding(.horizontal, 4)
+        .frame(height: 26)
         .background(Color.instrumentPlate)
         .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 1))
     }
@@ -211,18 +241,17 @@ struct RootView: View {
     private var dropOverlay: some View {
         Rectangle()
             .fill(Color.instrumentSurface.opacity(0.97))
-            .overlay(Rectangle().stroke(Color.instrumentOrange, style: StrokeStyle(lineWidth: 2, dash: [4, 4])).padding(8))
+            .overlay(Rectangle().stroke(Color.instrumentOrange, style: StrokeStyle(lineWidth: 2, dash: [4, 4])).padding(7))
             .overlay(
-                HStack(spacing: 12) {
-                    StemGlyph(size: 48)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("DROP AUDIO").font(.system(size: 13, weight: .semibold))
-                        Text("SONG OR PREPARED STEMS").font(.system(size: 7, weight: .medium, design: .monospaced))
-                            .foregroundStyle(Color.instrumentTextSecondary)
-                    }
+                VStack(spacing: 8) {
+                    StemGlyph(size: 52)
+                    Text("DROP AUDIO").font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    Text("SONG OR PREPARED STEMS")
+                        .font(.system(size: 6, weight: .medium, design: .monospaced))
+                        .foregroundStyle(Color.instrumentTextSecondary)
                 }
             )
-            .padding(6)
+            .padding(5)
             .allowsHitTesting(false)
     }
 
@@ -231,14 +260,14 @@ struct RootView: View {
             Spacer()
             HStack(spacing: 6) {
                 HardwareLED(color: .instrumentGreen, isOn: true)
-                Text(notice.uppercased()).font(.system(size: 7.5, weight: .medium, design: .monospaced))
+                Text(notice.uppercased()).font(.system(size: 7, weight: .medium, design: .monospaced))
             }
-            .padding(.horizontal, 10)
-            .frame(height: 24)
+            .padding(.horizontal, 9)
+            .frame(height: 23)
             .background(Color.instrumentRaised)
             .overlay(Rectangle().stroke(Color.instrumentLine))
             .shadow(color: Color.instrumentInk.opacity(0.22), radius: 0, y: 2)
-            .padding(.bottom, 7)
+            .padding(.bottom, 6)
         }
         .transition(.move(edge: .bottom).combined(with: .opacity))
         .allowsHitTesting(false)
@@ -268,24 +297,22 @@ private struct EmptyInstrumentView: View {
     @EnvironmentObject private var app: AppState
 
     var body: some View {
-        HStack(spacing: 18) {
-            StemGlyph(size: 70)
-            VStack(alignment: .leading, spacing: 7) {
-                Text("LOAD AUDIO")
-                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                Text("WAV  AIFF  MP3  M4A  FLAC")
-                    .font(.system(size: 7, weight: .medium, design: .monospaced))
-                    .foregroundStyle(Color.instrumentTextSecondary)
-                HStack(spacing: 5) {
-                    Button("Load") { app.presentAudioImporter() }
-                        .buttonStyle(InstrumentButtonStyle(accent: .instrumentOrange, isLatched: true, compact: true))
-                    Button("Project") { app.presentProjectImporter() }
-                        .buttonStyle(InstrumentButtonStyle(compact: true))
-                }
-                Text("DROP FILES ANYWHERE")
-                    .font(.system(size: 6, weight: .medium, design: .monospaced))
-                    .foregroundStyle(Color.instrumentTextSecondary)
+        VStack(spacing: 9) {
+            StemGlyph(size: 64)
+            Text("LOAD AUDIO")
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+            Text("WAV  AIFF  MP3  M4A  FLAC")
+                .font(.system(size: 6, weight: .medium, design: .monospaced))
+                .foregroundStyle(Color.instrumentTextSecondary)
+            HStack(spacing: 5) {
+                Button("Load") { app.presentAudioImporter() }
+                    .buttonStyle(InstrumentButtonStyle(accent: .instrumentOrange, isLatched: true, compact: true))
+                Button("Project") { app.presentProjectImporter() }
+                    .buttonStyle(InstrumentButtonStyle(compact: true))
             }
+            Text("DROP FILES ANYWHERE")
+                .font(.system(size: 5.5, weight: .medium, design: .monospaced))
+                .foregroundStyle(Color.instrumentTextSecondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.instrumentPlate.opacity(0.36))

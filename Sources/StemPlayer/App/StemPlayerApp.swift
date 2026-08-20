@@ -12,12 +12,12 @@ struct StemPlayerApp: App {
                 .environmentObject(appState.audio)
                 .preferredColorScheme(.light)
                 .frame(
-                    minWidth: 640,
-                    idealWidth: 680,
-                    maxWidth: 840,
-                    minHeight: 340,
-                    idealHeight: 360,
-                    maxHeight: 460
+                    minWidth: 300,
+                    idealWidth: 320,
+                    maxWidth: 400,
+                    minHeight: 520,
+                    idealHeight: 520,
+                    maxHeight: 640
                 )
                 .onAppear {
                     appState.activate()
@@ -26,7 +26,7 @@ struct StemPlayerApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
-        .defaultSize(width: 680, height: 360)
+        .defaultSize(width: 320, height: 520)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New Session") { appState.newSession() }

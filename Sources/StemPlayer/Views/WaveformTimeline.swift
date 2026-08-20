@@ -93,7 +93,7 @@ struct WaveformTimeline: View {
                 audio.seek(to: ratio * duration)
             })
         }
-        .frame(height: 36)
+        .frame(height: 42)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Song waveform")
         .accessibilityValue("Playhead at \(audio.currentTime.transportString)")

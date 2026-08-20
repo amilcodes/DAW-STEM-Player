@@ -177,6 +177,75 @@ struct PhysicalFader: View {
     }
 }
 
+struct HorizontalFader: View {
+    @Binding var value: Float
+    var range: ClosedRange<Float> = -60...6
+    var tint: Color
+
+    var body: some View {
+        GeometryReader { proxy in
+            let fraction = normalized(value)
+            let travel = max(1, proxy.size.width - 16)
+            let knobX = fraction * travel + 8
+            ZStack(alignment: .leading) {
+                VStack(spacing: 3) {
+                    scaleMarks
+                    Capsule()
+                        .fill(Color.instrumentInk.opacity(0.86))
+                        .frame(height: 3)
+                        .overlay(alignment: .leading) {
+                            Capsule().fill(tint).frame(width: max(1, travel * fraction), height: 1.5)
+                        }
+                    scaleMarks
+                }
+                .padding(.horizontal, 4)
+
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    .fill(Color.instrumentRaised)
+                    .overlay(RoundedRectangle(cornerRadius: 2).stroke(Color.instrumentInk.opacity(0.62), lineWidth: 1))
+                    .overlay(Rectangle().fill(tint).frame(width: 1.5, height: 14))
+                    .frame(width: 16, height: 22)
+                    .shadow(color: .black.opacity(0.2), radius: 0, x: 1)
+                    .position(x: knobX, y: proxy.size.height / 2)
+            }
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0).onChanged { gesture in
+                    let x = max(8, min(proxy.size.width - 8, gesture.location.x))
+                    let newFraction = (x - 8) / max(1, proxy.size.width - 16)
+                    value = range.lowerBound + Float(newFraction) * (range.upperBound - range.lowerBound)
+                }
+            )
+            .onTapGesture(count: 2) { value = 0 }
+        }
+        .accessibilityElement()
+        .accessibilityLabel("Level")
+        .accessibilityValue("\(value.decibelString) decibels")
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: value = min(range.upperBound, value + 1)
+            case .decrement: value = max(range.lowerBound, value - 1)
+            @unknown default: break
+            }
+        }
+    }
+
+    private var scaleMarks: some View {
+        HStack(spacing: 0) {
+            ForEach(0..<9, id: \.self) { index in
+                Rectangle()
+                    .fill(Color.instrumentInk.opacity(index == 7 ? 0.48 : 0.2))
+                    .frame(width: 1, height: index.isMultiple(of: 4) ? 5 : 3)
+                if index < 8 { Spacer() }
+            }
+        }
+    }
+
+    private func normalized(_ input: Float) -> CGFloat {
+        CGFloat((max(range.lowerBound, min(range.upperBound, input)) - range.lowerBound) / (range.upperBound - range.lowerBound))
+    }
+}
+
 struct RotaryKnob: View {
     var title: String
     @Binding var value: Float

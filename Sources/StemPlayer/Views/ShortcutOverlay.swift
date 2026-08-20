@@ -21,12 +21,12 @@ struct ShortcutOverlay: View {
         ZStack {
             Color.instrumentInk.opacity(0.58).ignoresSafeArea()
                 .onTapGesture { app.showShortcutOverlay = false }
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 7) {
                 HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("KEY MAP").font(.system(size: 11, weight: .semibold, design: .monospaced))
-                        Text("DIRECT PERFORMANCE CONTROL")
-                            .font(.system(size: 6, weight: .medium, design: .monospaced))
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("KEY MAP").font(.system(size: 10, weight: .semibold, design: .monospaced))
+                        Text("DIRECT CONTROL")
+                            .font(.system(size: 5.5, weight: .medium, design: .monospaced))
                             .foregroundStyle(Color.instrumentTextSecondary)
                     }
                     Spacer()
@@ -35,44 +35,45 @@ struct ShortcutOverlay: View {
                 }
                 Rectangle().fill(Color.instrumentLine).frame(height: 1)
 
-                HStack(alignment: .top, spacing: 18) {
-                    VStack(spacing: 3) {
-                        ForEach(commands, id: \.0) { command in
-                            HStack(spacing: 7) {
-                                KeyCap(text: command.0, wide: true)
-                                Text(command.1)
-                                    .font(.system(size: 7, weight: .medium))
-                                Spacer()
-                            }
+                VStack(spacing: 3) {
+                    ForEach(commands, id: \.0) { command in
+                        HStack(spacing: 6) {
+                            KeyCap(text: command.0, wide: true)
+                            Text(command.1)
+                                .font(.system(size: 6.5, weight: .medium))
+                            Spacer()
                         }
-                    }
-                    .frame(width: 320)
-
-                    VStack(alignment: .leading, spacing: 7) {
-                        Text("PAD MAP").font(.system(size: 7, weight: .semibold, design: .monospaced))
-                        VStack(spacing: 4) {
-                            HStack(spacing: 4) { ForEach(["1", "2", "3", "4"], id: \.self) { KeyCap(text: $0) } }
-                            HStack(spacing: 4) { ForEach(["Q", "W", "E", "R"], id: \.self) { KeyCap(text: $0) } }
-                            HStack(spacing: 4) { ForEach(["A", "S", "D", "F"], id: \.self) { KeyCap(text: $0) } }
-                        }
-                        HStack(spacing: 4) {
-                            ForEach(0..<4, id: \.self) { index in
-                                Rectangle().fill(Color.padColor(index)).frame(width: 23, height: 4)
-                            }
-                        }
-                        Text("KEYS, CLICKS, AND RAW MULTI-TOUCH SHARE ONE 4 × 3 FIELD.")
-                            .font(.system(size: 6.5, weight: .medium, design: .monospaced))
-                            .foregroundStyle(Color.instrumentTextSecondary)
-                            .lineSpacing(2)
-                            .frame(width: 165, alignment: .leading)
                     }
                 }
+
+                Rectangle().fill(Color.instrumentLine).frame(height: 1)
+                Text("PAD MAP").font(.system(size: 6.5, weight: .semibold, design: .monospaced))
+                HStack(spacing: 4) {
+                    VStack(spacing: 3) {
+                        HStack(spacing: 3) { ForEach(["1", "2", "3", "4"], id: \.self) { KeyCap(text: $0) } }
+                        HStack(spacing: 3) { ForEach(["Q", "W", "E", "R"], id: \.self) { KeyCap(text: $0) } }
+                        HStack(spacing: 3) { ForEach(["A", "S", "D", "F"], id: \.self) { KeyCap(text: $0) } }
+                    }
+                    Spacer()
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 3) {
+                            ForEach(0..<4, id: \.self) { index in
+                                Rectangle().fill(Color.padColor(index)).frame(width: 16, height: 3)
+                            }
+                        }
+                        Text("KEYS / POINTER / RAW MULTI-TOUCH")
+                            .font(.system(size: 5.5, weight: .medium, design: .monospaced))
+                            .foregroundStyle(Color.instrumentTextSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(width: 112, alignment: .leading)
+                }
             }
-            .padding(16)
-            .frame(width: 570, height: 300)
+            .padding(12)
+            .frame(width: 292, height: 452)
             .background(Color.instrumentSurface)
             .overlay(Rectangle().stroke(Color.instrumentLine))
-            .shadow(color: .black.opacity(0.3), radius: 0, y: 6)
+            .shadow(color: .black.opacity(0.3), radius: 0, y: 5)
         }
     }
 }

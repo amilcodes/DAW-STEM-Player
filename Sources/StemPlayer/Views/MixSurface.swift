@@ -10,63 +10,62 @@ struct MixSurface: View {
         VStack(spacing: 0) {
             header
             Rectangle().fill(Color.instrumentLine).frame(height: 1)
-            GeometryReader { proxy in
-                let visibleSlots = min(4, slotCount)
-                let width = proxy.size.width / CGFloat(visibleSlots)
-                if slotCount <= 4 {
-                    HStack(spacing: 0) {
-                        ForEach(0..<slotCount, id: \.self) { index in channel(index: index, width: width) }
+            if slotCount <= 4 {
+                VStack(spacing: 0) {
+                    ForEach(0..<slotCount, id: \.self) { index in
+                        channel(index: index)
+                        if index < slotCount - 1 { Rectangle().fill(Color.instrumentLine).frame(height: 1) }
                     }
-                } else {
-                    ScrollView(.horizontal) {
-                        HStack(spacing: 0) {
-                            ForEach(0..<slotCount, id: \.self) { index in channel(index: index, width: width) }
+                }
+            } else {
+                ScrollView(.vertical) {
+                    LazyVStack(spacing: 0) {
+                        ForEach(0..<slotCount, id: \.self) { index in
+                            channel(index: index).frame(height: 76)
+                            Rectangle().fill(Color.instrumentLine).frame(height: 1)
                         }
                     }
-                    .scrollIndicators(.hidden)
                 }
+                .scrollIndicators(.hidden)
             }
         }
         .background(Color.instrumentPlate.opacity(0.52))
         .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 1))
     }
 
-    @ViewBuilder private func channel(index: Int, width: CGFloat) -> some View {
+    @ViewBuilder private func channel(index: Int) -> some View {
         if app.project.stems.indices.contains(index) {
             let stem = app.project.stems[index]
-            StemChannelStrip(index: index, stem: stem, meter: audio.meters[stem.id] ?? .init())
-                .frame(width: width)
+            StemChannelRow(index: index, stem: stem, meter: audio.meters[stem.id] ?? .init())
+                .frame(maxHeight: .infinity)
         } else {
-            EmptyChannelStrip(index: index).frame(width: width)
+            EmptyChannelRow(index: index).frame(maxHeight: .infinity)
         }
     }
 
     private var header: some View {
-        HStack(spacing: 7) {
+        HStack(spacing: 6) {
             HardwareLED(color: .instrumentOrange, isOn: true, size: 4)
             Text("STEM MIX")
-                .font(.system(size: 7.5, weight: .semibold, design: .monospaced))
-            Text("LEVEL / PAN / TONE")
-                .font(.system(size: 5.5, weight: .medium, design: .monospaced))
-                .foregroundStyle(Color.instrumentTextSecondary)
-            Spacer()
+                .font(.system(size: 7, weight: .semibold, design: .monospaced))
             if app.canSeparate {
                 Button("Split ×4") { app.separateCurrentSong() }
                     .buttonStyle(InstrumentButtonStyle(accent: .instrumentGreen, isLatched: true, compact: true))
             }
+            Spacer(minLength: 0)
             Text("OUT")
-                .font(.system(size: 5.5, weight: .semibold, design: .monospaced))
+                .font(.system(size: 5, weight: .semibold, design: .monospaced))
                 .foregroundStyle(Color.instrumentTextSecondary)
             LevelMeter(value: audio.meters.values.map(\.peak).max() ?? 0, tint: .instrumentGreen, vertical: false)
-                .frame(width: 82, height: 8)
+                .frame(width: 72, height: 7)
         }
-        .padding(.horizontal, 7)
-        .frame(height: 24)
+        .padding(.horizontal, 6)
+        .frame(height: 22)
         .background(Color.instrumentSurface.opacity(0.55))
     }
 }
 
-private struct StemChannelStrip: View {
+private struct StemChannelRow: View {
     @EnvironmentObject private var app: AppState
     let index: Int
     let stem: StemModel
@@ -75,57 +74,76 @@ private struct StemChannelStrip: View {
     private var isSelected: Bool { app.selectedStemID == stem.id }
 
     var body: some View {
-        VStack(spacing: 5) {
-            channelHeader
-            HStack(spacing: 8) {
-                HStack(spacing: 4) {
-                    LevelMeter(value: meter.peak, tint: stem.role.color).frame(width: 7)
-                    PhysicalFader(
-                        value: Binding(
-                            get: { stem.gainDB },
-                            set: { value in app.updateStem(stem.id) { $0.gainDB = value } }
-                        ),
-                        tint: stem.role.color
-                    )
-                    .frame(width: 38)
-                }
-                VStack(spacing: 5) {
-                    RotaryKnob(
-                        "Pan",
-                        value: Binding(
-                            get: { stem.pan },
-                            set: { value in app.updateStem(stem.id) { $0.pan = value } }
-                        ),
-                        in: -1...1,
-                        accent: stem.role.color,
-                        formatter: panText
-                    )
-                    RotaryKnob(
-                        "Tone",
-                        value: Binding(
-                            get: { stem.tone },
-                            set: { value in app.updateStem(stem.id) { $0.tone = value } }
-                        ),
-                        in: -1...1,
-                        accent: stem.role.color,
-                        formatter: toneText
-                    )
-                }
-                .frame(width: 44)
-            }
-            .frame(maxHeight: .infinity)
+        HStack(spacing: 4) {
+            Rectangle().fill(stem.role.color).frame(width: 3)
 
-            HStack(spacing: 4) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("LVL").font(.system(size: 5, weight: .semibold))
-                        .foregroundStyle(Color.white.opacity(0.34))
-                    Text(stem.gainDB.decibelString)
-                        .font(.system(size: 7.5, weight: .medium, design: .monospaced))
-                        .foregroundStyle(stem.role.color)
+            Button { app.selectStem(stem.id) } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 3) {
+                        Text(String(format: "%02d", index + 1))
+                        HardwareLED(color: stem.role.color, isOn: isSelected, size: 3)
+                    }
+                    .font(.system(size: 5.5, weight: .medium, design: .monospaced))
+                    .foregroundStyle(Color.instrumentTextSecondary)
+                    Text(stem.name)
+                        .font(.system(size: 8, weight: .semibold))
+                        .lineLimit(1)
+                    Text(stem.role.displayName.uppercased())
+                        .font(.system(size: 5, weight: .medium, design: .monospaced))
+                        .foregroundStyle(Color.instrumentTextSecondary)
                 }
-                .padding(.horizontal, 5)
-                .frame(maxWidth: .infinity, minHeight: 22, alignment: .leading)
-                .background(Color.instrumentDisplay)
+                .frame(width: 47, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+
+            LevelMeter(value: meter.peak, tint: stem.role.color)
+                .frame(width: 6, height: 50)
+
+            HorizontalFader(
+                value: Binding(
+                    get: { stem.gainDB },
+                    set: { value in app.updateStem(stem.id) { $0.gainDB = value } }
+                ),
+                tint: stem.role.color
+            )
+            .frame(minWidth: 46, maxWidth: .infinity, minHeight: 28, maxHeight: 32)
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text("DB")
+                    .font(.system(size: 4.5, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(Color.white.opacity(0.34))
+                Text(stem.gainDB.decibelString)
+                    .font(.system(size: 6.5, weight: .medium, design: .monospaced))
+                    .foregroundStyle(stem.role.color)
+            }
+            .padding(.horizontal, 4)
+            .frame(width: 31, height: 24, alignment: .leading)
+            .background(Color.instrumentDisplay)
+
+            RotaryKnob(
+                "Pan",
+                value: Binding(
+                    get: { stem.pan },
+                    set: { value in app.updateStem(stem.id) { $0.pan = value } }
+                ),
+                in: -1...1,
+                accent: stem.role.color,
+                size: 24,
+                formatter: panText
+            )
+            RotaryKnob(
+                "Tone",
+                value: Binding(
+                    get: { stem.tone },
+                    set: { value in app.updateStem(stem.id) { $0.tone = value } }
+                ),
+                in: -1...1,
+                accent: stem.role.color,
+                size: 24,
+                formatter: toneText
+            )
+
+            VStack(spacing: 2) {
                 Button("M") { app.updateStem(stem.id) { $0.isMuted.toggle() } }
                     .buttonStyle(InstrumentButtonStyle(accent: stem.role.color, isLatched: stem.isMuted, compact: true))
                     .help("Mute selected stem — M")
@@ -137,11 +155,9 @@ private struct StemChannelStrip: View {
                     .help("Reset channel")
             }
         }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 5)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 4)
         .background(isSelected ? stem.role.color.opacity(0.075) : Color.clear)
-        .overlay(alignment: .top) { Rectangle().fill(isSelected ? stem.role.color : Color.clear).frame(height: 2) }
-        .overlay(alignment: .trailing) { Rectangle().fill(Color.instrumentLine).frame(width: 1) }
         .contentShape(Rectangle())
         .onTapGesture { app.selectStem(stem.id) }
         .contextMenu {
@@ -155,32 +171,6 @@ private struct StemChannelStrip: View {
         .accessibilityLabel("\(stem.name) stem")
     }
 
-    private var channelHeader: some View {
-        Button { app.selectStem(stem.id) } label: {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack {
-                    Text(String(format: "%02d", index + 1))
-                    Spacer()
-                    HardwareLED(color: stem.role.color, isOn: isSelected, size: 4)
-                }
-                .font(.system(size: 6, weight: .medium, design: .monospaced))
-                .foregroundStyle(Color.instrumentTextSecondary)
-                Rectangle().fill(stem.role.color).frame(height: 2)
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(stem.name)
-                        .font(.system(size: 9, weight: .semibold))
-                        .lineLimit(1)
-                    Spacer(minLength: 1)
-                    Text(stem.role.displayName.uppercased())
-                        .font(.system(size: 5.5, weight: .medium, design: .monospaced))
-                        .foregroundStyle(Color.instrumentTextSecondary)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .buttonStyle(.plain)
-    }
-
     private func panText(_ value: Float) -> String {
         if abs(value) < 0.02 { return "C" }
         return value < 0 ? "L\(Int(abs(value) * 100))" : "R\(Int(value * 100))"
@@ -192,29 +182,22 @@ private struct StemChannelStrip: View {
     }
 }
 
-private struct EmptyChannelStrip: View {
+private struct EmptyChannelRow: View {
     let index: Int
 
     var body: some View {
-        VStack(spacing: 5) {
-            HStack {
-                Text(String(format: "%02d", index + 1))
-                Spacer()
-                HardwareLED(color: Color.padColor(index), isOn: false, size: 4)
-            }
-            .font(.system(size: 6, weight: .medium, design: .monospaced))
-            .foregroundStyle(Color.instrumentTextSecondary.opacity(0.7))
-            Rectangle().fill(Color.padColor(index).opacity(0.24)).frame(height: 2)
+        HStack(spacing: 6) {
+            Rectangle().fill(Color.padColor(index).opacity(0.28)).frame(width: 3)
+            Text(String(format: "%02d", index + 1))
             Text("OPEN BAY")
-                .font(.system(size: 7, weight: .medium, design: .monospaced))
-                .foregroundStyle(Color.instrumentTextSecondary.opacity(0.55))
             Spacer()
-            Capsule().fill(Color.instrumentInk.opacity(0.08)).frame(width: 3, height: 94)
+            Capsule().fill(Color.instrumentInk.opacity(0.09)).frame(width: 116, height: 3)
             Spacer()
-            HStack(spacing: 3) { KeyCap(text: "M"); KeyCap(text: "S"); KeyCap(text: "↺") }.opacity(0.28)
+            HStack(spacing: 2) { KeyCap(text: "M"); KeyCap(text: "S"); KeyCap(text: "↺") }.opacity(0.24)
         }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 5)
-        .overlay(alignment: .trailing) { Rectangle().fill(Color.instrumentLine).frame(width: 1) }
+        .font(.system(size: 6, weight: .medium, design: .monospaced))
+        .foregroundStyle(Color.instrumentTextSecondary.opacity(0.62))
+        .padding(.horizontal, 5)
+        .padding(.vertical, 4)
     }
 }
