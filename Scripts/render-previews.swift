@@ -12,6 +12,35 @@ struct PreviewRenderer {
         let outputDirectory = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
         try FileManager.default.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
 
+        let warmupApp = previewApp(mode: .mix)
+        for _ in 0..<2 {
+            let warmup = ImageRenderer(content: previewView(app: warmupApp))
+            warmup.scale = 2
+            _ = warmup.nsImage?.tiffRepresentation
+        }
+
+        for mode in WorkspaceMode.allCases {
+            let app = previewApp(mode: mode)
+            for _ in 0..<2 {
+                let preflight = ImageRenderer(content: previewView(app: app))
+                preflight.scale = 2
+                _ = preflight.nsImage?.tiffRepresentation
+            }
+
+            let renderer = ImageRenderer(content: previewView(app: app))
+            renderer.scale = 2
+            guard let image = renderer.nsImage,
+                  let tiff = image.tiffRepresentation,
+                  let bitmap = NSBitmapImageRep(data: tiff),
+                  let png = bitmap.representation(using: .png, properties: [:]) else {
+                throw PreviewError.renderFailed(mode.rawValue)
+            }
+            try png.write(to: outputDirectory.appendingPathComponent("\(mode.rawValue.lowercased()).png"))
+        }
+    }
+
+    @MainActor
+    private static func previewApp(mode: WorkspaceMode) -> AppState {
         let app = AppState()
         let stems = [
             StemModel(role: .drums, relativePath: "preview-drums.wav", gainDB: -1.5, pan: -0.08, tone: 0.16),
@@ -27,6 +56,7 @@ struct PreviewRenderer {
         )
         app.selectedStemID = stems[0].id
         app.selectedPadIndex = 1
+        app.mode = mode
         app.waveforms = Dictionary(uniqueKeysWithValues: stems.enumerated().map { index, stem in
             let peaks = (0..<420).map { sample -> Float in
                 let x = Double(sample) / 420
@@ -36,33 +66,7 @@ struct PreviewRenderer {
             }
             return (stem.id, peaks)
         })
-
-        // Prime SwiftUI's offscreen renderer once before writing any file. The first
-        // ImageRenderer pass can omit sibling layers around a Canvas on macOS.
-        app.mode = .mix
-        for _ in 0..<2 {
-            let warmup = ImageRenderer(content: previewView(app: app))
-            warmup.scale = 2
-            _ = warmup.nsImage?.tiffRepresentation
-        }
-
-        // Render the mix last so every waveform and text layer has been primed.
-        for mode in [WorkspaceMode.pads, .pattern, .mix] {
-            app.mode = mode
-            let preflight = ImageRenderer(content: previewView(app: app))
-            preflight.scale = 2
-            _ = preflight.nsImage?.tiffRepresentation
-
-            let renderer = ImageRenderer(content: previewView(app: app))
-            renderer.scale = 2
-            guard let image = renderer.nsImage,
-                  let tiff = image.tiffRepresentation,
-                  let bitmap = NSBitmapImageRep(data: tiff),
-                  let png = bitmap.representation(using: .png, properties: [:]) else {
-                throw PreviewError.renderFailed(mode.rawValue)
-            }
-            try png.write(to: outputDirectory.appendingPathComponent("\(mode.rawValue.lowercased()).png"))
-        }
+        return app
     }
 
     @MainActor
@@ -71,7 +75,7 @@ struct PreviewRenderer {
             .environmentObject(app)
             .environmentObject(app.audio)
             .preferredColorScheme(.light)
-            .frame(width: 680, height: 360)
+            .frame(width: 320, height: 520)
     }
 
     private static func previewPattern() -> DrumPattern {

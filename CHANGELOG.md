@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.4.0
+
+- Rebuilt the instrument as a narrow 320 × 520 floating device instead of a desktop-width rectangle.
+- Replaced the four-column mixer with four dense horizontal signal rows.
+- Stacked the 4 × 3 pad field above one compact voice and multitouch control deck.
+- Repacked all sixteen sequencer steps into a narrow matrix without paging or hiding voices.
+- Split transport and file actions into two short physical key rows.
+- Added a horizontal hardware fader designed for the vertical mixer layout.
+- Rebuilt the keyboard reference and product screenshots for the new aspect ratio.
+
 ## 2.3.0
 
 - Reduced the default instrument from 1160 × 620 to 680 × 360 points, with a 640 × 340 minimum.
