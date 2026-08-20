@@ -37,13 +37,21 @@ struct PreviewRenderer {
             return (stem.id, peaks)
         })
 
-        // Render the mix last: its waveform Canvas needs one completed offscreen pass
-        // before macOS consistently snapshots every text and path layer.
+        // Prime SwiftUI's offscreen renderer once before writing any file. The first
+        // ImageRenderer pass can omit sibling layers around a Canvas on macOS.
+        app.mode = .mix
+        for _ in 0..<2 {
+            let warmup = ImageRenderer(content: previewView(app: app))
+            warmup.scale = 2
+            _ = warmup.nsImage?.tiffRepresentation
+        }
+
+        // Render the mix last so every waveform and text layer has been primed.
         for mode in [WorkspaceMode.pads, .pattern, .mix] {
             app.mode = mode
             let preflight = ImageRenderer(content: previewView(app: app))
             preflight.scale = 2
-            _ = preflight.nsImage
+            _ = preflight.nsImage?.tiffRepresentation
 
             let renderer = ImageRenderer(content: previewView(app: app))
             renderer.scale = 2
@@ -63,7 +71,7 @@ struct PreviewRenderer {
             .environmentObject(app)
             .environmentObject(app.audio)
             .preferredColorScheme(.light)
-            .frame(width: 1_160, height: 620)
+            .frame(width: 680, height: 360)
     }
 
     private static func previewPattern() -> DrumPattern {

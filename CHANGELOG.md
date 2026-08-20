@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.3.0
+
+- Reduced the default instrument from 1160 × 620 to 680 × 360 points, with a 640 × 340 minimum.
+- Combined session, waveform, mode, and playback state into one 42-point hardware control band.
+- Replaced the large transport footer with a 28-point row of direct utility keys.
+- Repacked the mixer into four contiguous channel strips with short faders and compact rotary controls.
+- Fit the full 4 × 3 drum field beside sample, choke, recording, and raw multitouch controls.
+- Kept all sixteen sequencer steps and four voices visible inside the smaller chassis.
+- Reduced labels to operational terms and moved guidance into tooltips and the keyboard map.
+- Shrunk the keyboard overlay and regenerated every product image at the actual default window size.
+
 ## 2.2.0
 
 - Replaced the app-style sidebar, inspector, and tab bar with one compact 1160 × 620 instrument faceplate.
