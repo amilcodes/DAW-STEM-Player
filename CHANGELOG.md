@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.5.0
+
+- Replaced the mixed display typography with Helvetica Neue for controls and SF Mono only for measured values.
+- Reduced the interface to warm neutrals, black working surfaces, one vermilion action color, and a muted green run state.
+- Removed decorative shadows, colored channel identities, duplicate workspace headers, and nonessential status labels.
+- Moved separation and sequencer bank actions into the existing hardware key rows.
+- Rebuilt waveforms, pads, meters, faders, knobs, and steps with thinner lines and flatter construction.
+- Regenerated all product screenshots from the finished 320 × 520-point instrument.
+
 ## 2.4.0
 
 - Rebuilt the instrument as a narrow 320 × 520 floating device instead of a desktop-width rectangle.

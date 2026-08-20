@@ -14,12 +14,12 @@ struct WaveformTimeline: View {
                 if app.project.stems.isEmpty {
                     HStack(spacing: 6) {
                         HardwareLED(color: .instrumentOrange, isOn: true, size: 4)
-                        Text("NO MEDIA")
-                            .font(.system(size: 7, weight: .medium, design: .monospaced))
-                            .foregroundStyle(Color.instrumentYellow)
+                        Text("no media")
+                            .font(.instrument(7, weight: .medium))
+                            .foregroundStyle(Color.instrumentRaised.opacity(0.76))
                         Spacer()
-                        Text("44.1K / 32")
-                            .font(.system(size: 5.5, weight: .medium, design: .monospaced))
+                        Text("44.1 / 32")
+                            .font(.instrumentNumber(5.5, weight: .medium))
                             .foregroundStyle(Color.white.opacity(0.25))
                     }
                     .padding(.horizontal, 7)
@@ -43,7 +43,11 @@ struct WaveformTimeline: View {
                                 shape.addLine(to: CGPoint(x: x, y: center + CGFloat(peaks[peakIndex]) * amplitude))
                             }
                             shape.closeSubpath()
-                            context.fill(shape, with: .color(stem.role.color.opacity(0.72)))
+                            let isSelected = app.selectedStemID == stem.id
+                            let laneColor = isSelected
+                                ? Color.instrumentOrange.opacity(0.78)
+                                : Color.instrumentRaised.opacity(0.19)
+                            context.fill(shape, with: .color(laneColor))
                         }
                     }
                     .padding(.horizontal, 2)
@@ -53,9 +57,9 @@ struct WaveformTimeline: View {
                         let start = proxy.size.width * app.project.loop.startSeconds / duration
                         let end = proxy.size.width * app.project.loop.endSeconds / duration
                         Rectangle()
-                            .fill(Color.instrumentYellow.opacity(0.11))
+                            .fill(Color.instrumentOrange.opacity(0.1))
                             .frame(width: max(1, end - start))
-                            .overlay(alignment: .top) { Rectangle().fill(Color.instrumentYellow).frame(height: 1) }
+                            .overlay(alignment: .top) { Rectangle().fill(Color.instrumentOrange).frame(height: 1) }
                             .offset(x: start)
                     }
 
@@ -64,28 +68,20 @@ struct WaveformTimeline: View {
                         .frame(width: 1)
                         .offset(x: max(0, min(proxy.size.width - 1, playheadX)))
 
-                    VStack(spacing: 0) {
-                        HStack {
-                            Text(audio.currentTime.transportString)
-                                .foregroundStyle(Color.instrumentYellow)
-                            Spacer()
-                            Text(app.project.durationSeconds.transportString)
-                        }
+                    HStack {
+                        Text(audio.currentTime.transportString)
+                            .foregroundStyle(Color.instrumentOrange)
                         Spacer()
-                        HStack(spacing: 4) {
-                            HardwareLED(color: audio.isPlaying ? .instrumentGreen : .instrumentOrange, isOn: true, size: 3)
-                            Text(statusText)
-                            Spacer()
-                            Text(app.mode.shortName.uppercased())
-                        }
+                        Text(app.project.durationSeconds.transportString)
                     }
-                    .font(.system(size: 5.5, weight: .medium, design: .monospaced))
+                    .font(.instrumentNumber(5.5, weight: .medium))
                     .foregroundStyle(Color.white.opacity(0.42))
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
+                    .frame(maxHeight: .infinity, alignment: .top)
                 }
             }
-            .overlay(Rectangle().stroke(Color.instrumentInk.opacity(0.85), lineWidth: 1))
+            .overlay(Rectangle().stroke(Color.instrumentInk.opacity(0.52), lineWidth: 0.6))
             .contentShape(Rectangle())
             .gesture(DragGesture(minimumDistance: 0).onChanged { gesture in
                 guard !app.project.stems.isEmpty else { return }
@@ -99,12 +95,4 @@ struct WaveformTimeline: View {
         .accessibilityValue("Playhead at \(audio.currentTime.transportString)")
     }
 
-    private var statusText: String {
-        switch app.separator.state {
-        case .preparing: "PREP"
-        case .running(let progress, _): "SPLIT \(Int(progress * 100))%"
-        case .failed: "SPLIT ERR"
-        default: audio.isPlaying ? "RUN" : "READY"
-        }
-    }
 }

@@ -20,19 +20,29 @@ extension Double {
 }
 
 extension Color {
-    // A deliberately small, industrial palette. Color communicates function only.
-    static let instrumentBackground = Color(red: 0.64, green: 0.64, blue: 0.61)
-    static let instrumentSurface = Color(red: 0.82, green: 0.81, blue: 0.77)
-    static let instrumentRaised = Color(red: 0.93, green: 0.92, blue: 0.88)
-    static let instrumentPlate = Color(red: 0.75, green: 0.75, blue: 0.71)
-    static let instrumentInk = Color(red: 0.105, green: 0.11, blue: 0.105)
-    static let instrumentDisplay = Color(red: 0.07, green: 0.078, blue: 0.073)
-    static let instrumentTextSecondary = Color.instrumentInk.opacity(0.58)
-    static let instrumentLine = Color.instrumentInk.opacity(0.28)
-    static let instrumentOrange = Color(red: 0.94, green: 0.31, blue: 0.12)
-    static let instrumentYellow = Color(red: 0.97, green: 0.74, blue: 0.12)
-    static let instrumentGreen = Color(red: 0.29, green: 0.63, blue: 0.35)
-    static let instrumentBlue = Color(red: 0.16, green: 0.43, blue: 0.74)
+    // Neutral hardware with one action color and one restrained run-state color.
+    static let instrumentBackground = Color(red: 0.76, green: 0.76, blue: 0.73)
+    static let instrumentSurface = Color(red: 0.91, green: 0.90, blue: 0.87)
+    static let instrumentRaised = Color(red: 0.975, green: 0.97, blue: 0.945)
+    static let instrumentPlate = Color(red: 0.865, green: 0.855, blue: 0.82)
+    static let instrumentInk = Color(red: 0.075, green: 0.078, blue: 0.075)
+    static let instrumentDisplay = Color(red: 0.055, green: 0.058, blue: 0.055)
+    static let instrumentTextSecondary = Color.instrumentInk.opacity(0.48)
+    static let instrumentLine = Color.instrumentInk.opacity(0.16)
+    static let instrumentOrange = Color(red: 0.92, green: 0.255, blue: 0.13)
+    static let instrumentYellow = Color.instrumentOrange
+    static let instrumentGreen = Color(red: 0.23, green: 0.48, blue: 0.37)
+    static let instrumentBlue = Color(red: 0.31, green: 0.35, blue: 0.35)
+}
+
+extension Font {
+    static func instrument(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        .custom("Helvetica Neue", fixedSize: size).weight(weight)
+    }
+
+    static func instrumentNumber(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        .system(size: size, weight: weight, design: .monospaced)
+    }
 }
 
 extension URL {
@@ -42,22 +52,20 @@ extension URL {
 }
 
 extension View {
-    func instrumentPanel(cornerRadius: CGFloat = 3) -> some View {
+    func instrumentPanel(cornerRadius: CGFloat = 1) -> some View {
         self
             .background(
-                RoundedRectangle(cornerRadius: min(cornerRadius, 5), style: .continuous)
+                RoundedRectangle(cornerRadius: min(cornerRadius, 2), style: .continuous)
                     .fill(Color.instrumentSurface)
                     .overlay(
-                        RoundedRectangle(cornerRadius: min(cornerRadius, 5), style: .continuous)
-                            .stroke(Color.instrumentInk.opacity(0.34), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: min(cornerRadius, 2), style: .continuous)
+                            .stroke(Color.instrumentLine, lineWidth: 0.7)
                     )
-                    .shadow(color: Color.instrumentInk.opacity(0.18), radius: 0, y: 3)
             )
     }
 
     func instrumentLabel() -> some View {
-        self.font(.system(size: 8, weight: .semibold))
-            .tracking(0.45)
+        self.font(.instrument(8, weight: .medium))
             .foregroundStyle(Color.instrumentTextSecondary)
     }
 }

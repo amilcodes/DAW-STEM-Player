@@ -23,14 +23,9 @@ struct ShortcutOverlay: View {
                 .onTapGesture { app.showShortcutOverlay = false }
             VStack(alignment: .leading, spacing: 7) {
                 HStack {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("KEY MAP").font(.system(size: 10, weight: .semibold, design: .monospaced))
-                        Text("DIRECT CONTROL")
-                            .font(.system(size: 5.5, weight: .medium, design: .monospaced))
-                            .foregroundStyle(Color.instrumentTextSecondary)
-                    }
+                    Text("keys").font(.instrument(10, weight: .medium))
                     Spacer()
-                    Button("Close") { app.showShortcutOverlay = false }
+                    Button("close") { app.showShortcutOverlay = false }
                         .buttonStyle(InstrumentButtonStyle(compact: true))
                 }
                 Rectangle().fill(Color.instrumentLine).frame(height: 1)
@@ -40,14 +35,13 @@ struct ShortcutOverlay: View {
                         HStack(spacing: 6) {
                             KeyCap(text: command.0, wide: true)
                             Text(command.1)
-                                .font(.system(size: 6.5, weight: .medium))
+                                .font(.instrument(6.5, weight: .regular))
                             Spacer()
                         }
                     }
                 }
 
                 Rectangle().fill(Color.instrumentLine).frame(height: 1)
-                Text("PAD MAP").font(.system(size: 6.5, weight: .semibold, design: .monospaced))
                 HStack(spacing: 4) {
                     VStack(spacing: 3) {
                         HStack(spacing: 3) { ForEach(["1", "2", "3", "4"], id: \.self) { KeyCap(text: $0) } }
@@ -56,13 +50,9 @@ struct ShortcutOverlay: View {
                     }
                     Spacer()
                     VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 3) {
-                            ForEach(0..<4, id: \.self) { index in
-                                Rectangle().fill(Color.padColor(index)).frame(width: 16, height: 3)
-                            }
-                        }
-                        Text("KEYS / POINTER / RAW MULTI-TOUCH")
-                            .font(.system(size: 5.5, weight: .medium, design: .monospaced))
+                        Rectangle().fill(Color.instrumentOrange).frame(width: 14, height: 2)
+                        Text("keyboard · pointer · touch")
+                            .font(.instrument(5.5, weight: .regular))
                             .foregroundStyle(Color.instrumentTextSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -72,8 +62,7 @@ struct ShortcutOverlay: View {
             .padding(12)
             .frame(width: 292, height: 452)
             .background(Color.instrumentSurface)
-            .overlay(Rectangle().stroke(Color.instrumentLine))
-            .shadow(color: .black.opacity(0.3), radius: 0, y: 5)
+            .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 0.7))
         }
     }
 }

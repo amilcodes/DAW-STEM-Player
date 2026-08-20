@@ -36,11 +36,11 @@ enum StemRole: String, Codable, CaseIterable, Identifiable, Sendable {
     var color: Color {
         switch self {
         case .drums: .instrumentOrange
-        case .vocals: .instrumentYellow
+        case .vocals: .instrumentInk.opacity(0.58)
         case .instruments: .instrumentGreen
         case .bass: .instrumentBlue
         case .mix: .instrumentOrange
-        case .custom: .instrumentBlue
+        case .custom: .instrumentInk.opacity(0.58)
         }
     }
 

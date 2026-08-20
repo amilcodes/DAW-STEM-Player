@@ -8,21 +8,23 @@ struct InstrumentButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: compact ? 7.5 : 9, weight: .semibold))
-            .textCase(.uppercase)
-            .foregroundStyle(Color.instrumentInk.opacity(configuration.isPressed ? 0.62 : 0.94))
+            .font(.instrument(compact ? 7 : 8.5, weight: .medium))
+            .foregroundStyle(isLatched ? Color.instrumentRaised : Color.instrumentInk.opacity(configuration.isPressed ? 0.55 : 0.88))
             .padding(.horizontal, compact ? 6 : 9)
             .frame(minHeight: compact ? 20 : 26)
             .background(
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
-                    .fill(isLatched ? accent : Color.instrumentRaised)
+                RoundedRectangle(cornerRadius: 1, style: .continuous)
+                    .fill(isLatched ? Color.instrumentInk : Color.instrumentRaised)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 2, style: .continuous)
-                            .stroke(Color.instrumentInk.opacity(isLatched ? 0.58 : 0.32), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 1, style: .continuous)
+                            .stroke(isLatched ? Color.instrumentInk : Color.instrumentLine, lineWidth: 0.7)
                     )
-                    .shadow(color: Color.instrumentInk.opacity(0.22), radius: 0, y: configuration.isPressed ? 0 : 1.5)
+                    .overlay(alignment: .top) {
+                        if isLatched { Rectangle().fill(accent).frame(height: 1.5) }
+                    }
             )
-            .offset(y: configuration.isPressed ? 1.5 : 0)
+            .opacity(configuration.isPressed ? 0.72 : 1)
+            .offset(y: configuration.isPressed ? 0.5 : 0)
             .animation(.easeOut(duration: 0.05), value: configuration.isPressed)
     }
 }
@@ -33,19 +35,19 @@ struct CircleTransportButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: size * 0.3, weight: .bold))
+            .font(.instrument(size * 0.28, weight: .semibold))
             .foregroundStyle(Color.instrumentInk)
             .frame(width: size, height: size)
             .background(
                 Circle()
                     .fill(Color.instrumentRaised)
-                    .overlay(Circle().stroke(Color.instrumentInk.opacity(0.54), lineWidth: 1))
+                    .overlay(Circle().stroke(Color.instrumentInk.opacity(0.48), lineWidth: 0.8))
                     .overlay(alignment: .top) {
-                        Capsule().fill(tint).frame(width: size * 0.22, height: 2).padding(.top, 4)
+                        Circle().fill(tint).frame(width: 3, height: 3).padding(.top, 4)
                     }
-                    .shadow(color: Color.instrumentInk.opacity(0.26), radius: 0, y: configuration.isPressed ? 0 : 2)
             )
-            .offset(y: configuration.isPressed ? 2 : 0)
+            .opacity(configuration.isPressed ? 0.7 : 1)
+            .offset(y: configuration.isPressed ? 0.5 : 0)
             .animation(.easeOut(duration: 0.05), value: configuration.isPressed)
     }
 }
@@ -58,7 +60,6 @@ struct HardwareLED: View {
     var body: some View {
         Circle()
             .fill(isOn ? color : Color.instrumentInk.opacity(0.16))
-            .overlay(Circle().stroke(Color.instrumentInk.opacity(0.42), lineWidth: 0.6))
             .frame(width: size, height: size)
     }
 }
@@ -90,7 +91,7 @@ struct LevelMeter: View {
             .padding(2)
             .frame(width: proxy.size.width, height: proxy.size.height)
             .background(Color.instrumentDisplay)
-            .overlay(Rectangle().stroke(Color.instrumentInk.opacity(0.32), lineWidth: 0.7))
+            .overlay(Rectangle().stroke(Color.instrumentLine, lineWidth: 0.5))
         }
     }
 
@@ -124,9 +125,9 @@ struct PhysicalFader: View {
                 }
                 .padding(.vertical, 5)
 
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                RoundedRectangle(cornerRadius: 1, style: .continuous)
                     .fill(Color.instrumentRaised)
-                    .overlay(RoundedRectangle(cornerRadius: 2).stroke(Color.instrumentInk.opacity(0.68), lineWidth: 1))
+                    .overlay(RoundedRectangle(cornerRadius: 1).stroke(Color.instrumentInk.opacity(0.45), lineWidth: 0.7))
                     .overlay(Rectangle().fill(tint).frame(width: 21, height: 1.5))
                     .overlay {
                         HStack(spacing: 2) {
@@ -136,7 +137,6 @@ struct PhysicalFader: View {
                         }
                     }
                     .frame(width: 27, height: 16)
-                    .shadow(color: .black.opacity(0.22), radius: 0, y: 1)
                     .position(x: proxy.size.width / 2, y: knobY)
             }
             .contentShape(Rectangle())
@@ -188,24 +188,19 @@ struct HorizontalFader: View {
             let travel = max(1, proxy.size.width - 16)
             let knobX = fraction * travel + 8
             ZStack(alignment: .leading) {
-                VStack(spacing: 3) {
-                    scaleMarks
-                    Capsule()
-                        .fill(Color.instrumentInk.opacity(0.86))
-                        .frame(height: 3)
-                        .overlay(alignment: .leading) {
-                            Capsule().fill(tint).frame(width: max(1, travel * fraction), height: 1.5)
-                        }
-                    scaleMarks
-                }
-                .padding(.horizontal, 4)
+                Capsule()
+                    .fill(Color.instrumentInk.opacity(0.58))
+                    .frame(height: 2)
+                    .overlay(alignment: .leading) {
+                        Capsule().fill(tint).frame(width: max(1, travel * fraction), height: 1.5)
+                    }
+                    .padding(.horizontal, 4)
 
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                RoundedRectangle(cornerRadius: 1, style: .continuous)
                     .fill(Color.instrumentRaised)
-                    .overlay(RoundedRectangle(cornerRadius: 2).stroke(Color.instrumentInk.opacity(0.62), lineWidth: 1))
+                    .overlay(RoundedRectangle(cornerRadius: 1).stroke(Color.instrumentInk.opacity(0.46), lineWidth: 0.7))
                     .overlay(Rectangle().fill(tint).frame(width: 1.5, height: 14))
                     .frame(width: 16, height: 22)
-                    .shadow(color: .black.opacity(0.2), radius: 0, x: 1)
                     .position(x: knobX, y: proxy.size.height / 2)
             }
             .contentShape(Rectangle())
@@ -226,17 +221,6 @@ struct HorizontalFader: View {
             case .increment: value = min(range.upperBound, value + 1)
             case .decrement: value = max(range.lowerBound, value - 1)
             @unknown default: break
-            }
-        }
-    }
-
-    private var scaleMarks: some View {
-        HStack(spacing: 0) {
-            ForEach(0..<9, id: \.self) { index in
-                Rectangle()
-                    .fill(Color.instrumentInk.opacity(index == 7 ? 0.48 : 0.2))
-                    .frame(width: 1, height: index.isMultiple(of: 4) ? 5 : 3)
-                if index < 8 { Spacer() }
             }
         }
     }
@@ -278,17 +262,15 @@ struct RotaryKnob: View {
     var body: some View {
         VStack(spacing: 2) {
             ZStack {
-                ForEach(0..<9, id: \.self) { index in
+                ForEach(0..<5, id: \.self) { index in
                     Capsule()
-                        .fill(index == 4 ? accent : Color.instrumentInk.opacity(0.3))
-                        .frame(width: 1, height: index == 4 ? 4 : 2)
+                        .fill(index == 2 ? accent : Color.instrumentInk.opacity(0.2))
+                        .frame(width: 1, height: index == 2 ? 3 : 2)
                         .offset(y: -size * 0.48)
-                        .rotationEffect(.degrees(-135 + Double(index) * 33.75))
+                        .rotationEffect(.degrees(-135 + Double(index) * 67.5))
                 }
                 Circle()
                     .fill(Color.instrumentInk)
-                    .overlay(Circle().stroke(Color.black.opacity(0.45), lineWidth: 1))
-                    .shadow(color: Color.instrumentInk.opacity(0.22), radius: 0, y: 1)
                     .frame(width: size * 0.72, height: size * 0.72)
                 Capsule()
                     .fill(accent)
@@ -311,12 +293,11 @@ struct RotaryKnob: View {
             )
             .onTapGesture(count: 2) { value = defaultValue }
 
-            Text(title.uppercased())
-                .font(.system(size: 6, weight: .semibold))
-                .tracking(0.3)
+            Text(title.lowercased())
+                .font(.instrument(5.5, weight: .regular))
                 .foregroundStyle(Color.instrumentTextSecondary)
             Text(formatter(value))
-                .font(.system(size: 7, weight: .medium, design: .monospaced))
+                .font(.instrumentNumber(7, weight: .medium))
                 .foregroundStyle(Color.instrumentInk)
                 .lineLimit(1)
         }
@@ -361,7 +342,6 @@ struct ModeSelector: View {
                         }
                         .frame(width: slot * 0.62, height: 18)
                         .offset(x: CGFloat(selectedIndex) * slot + slot * 0.19)
-                        .shadow(color: Color.instrumentInk.opacity(0.2), radius: 0, y: 2)
                 }
                 .frame(maxHeight: .infinity)
                 .contentShape(Rectangle())
@@ -376,8 +356,8 @@ struct ModeSelector: View {
 
             HStack(spacing: 0) {
                 ForEach(WorkspaceMode.allCases) { mode in
-                    Text(mode.shortName)
-                        .font(.system(size: 6, weight: selection == mode ? .bold : .medium))
+                    Text(mode.shortName.lowercased())
+                        .font(.instrument(6, weight: selection == mode ? .semibold : .regular))
                         .foregroundStyle(selection == mode ? Color.instrumentInk : Color.instrumentTextSecondary)
                         .frame(maxWidth: .infinity)
                 }
@@ -404,16 +384,15 @@ struct KeyCap: View {
     var wide = false
 
     var body: some View {
-        Text(text.uppercased())
-            .font(.system(size: 7, weight: .semibold, design: .monospaced))
+        Text(text)
+            .font(.instrument(6.5, weight: .medium))
             .foregroundStyle(Color.instrumentInk)
             .frame(minWidth: wide ? 44 : 18, minHeight: 17)
             .padding(.horizontal, wide ? 4 : 0)
             .background(
-                RoundedRectangle(cornerRadius: 2)
+                RoundedRectangle(cornerRadius: 1)
                     .fill(Color.instrumentRaised)
-                    .overlay(RoundedRectangle(cornerRadius: 2).stroke(Color.instrumentInk.opacity(0.3), lineWidth: 1))
-                    .shadow(color: Color.instrumentInk.opacity(0.18), radius: 0, y: 1)
+                    .overlay(RoundedRectangle(cornerRadius: 1).stroke(Color.instrumentLine, lineWidth: 0.7))
             )
     }
 }
@@ -446,17 +425,12 @@ final class DragNSView: NSView {
 
 extension Color {
     static func padColor(_ index: Int) -> Color {
-        let palette: [Color] = [.instrumentOrange, .instrumentYellow, .instrumentGreen, .instrumentBlue]
-        return palette[index % palette.count]
+        .instrumentOrange
     }
 }
 
 extension WorkspaceMode {
     var accent: Color {
-        switch self {
-        case .mix: .instrumentOrange
-        case .pads: .instrumentYellow
-        case .pattern: .instrumentGreen
-        }
+        .instrumentOrange
     }
 }
