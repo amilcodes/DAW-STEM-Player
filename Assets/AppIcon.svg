@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" rx="220" fill="#b5b1a5"/>
+  <rect x="40" y="40" width="944" height="944" rx="185" fill="none" stroke="#1b1c1a" stroke-width="18"/>
+  <g fill="#1b1c1a" opacity=".42">
+    <circle cx="104" cy="104" r="18"/><circle cx="920" cy="104" r="18"/>
+    <circle cx="104" cy="920" r="18"/><circle cx="920" cy="920" r="18"/>
+  </g>
+  <circle cx="512" cy="512" r="326" fill="#d4cfc0" stroke="#1b1c1a" stroke-width="18"/>
+  <rect x="478" y="218" width="68" height="214" rx="10" fill="#ef4e1f" stroke="#1b1c1a" stroke-width="8"/>
+  <rect x="592" y="478" width="214" height="68" rx="10" fill="#f3ba20" stroke="#1b1c1a" stroke-width="8"/>
+  <rect x="478" y="592" width="68" height="214" rx="10" fill="#4aa159" stroke="#1b1c1a" stroke-width="8"/>
+  <rect x="218" y="478" width="214" height="68" rx="10" fill="#296dba" stroke="#1b1c1a" stroke-width="8"/>
+  <circle cx="512" cy="512" r="132" fill="#ece7d8" stroke="#1b1c1a" stroke-width="16"/>
+  <path d="M482 446 L598 512 L482 578 Z" fill="#1b1c1a"/>
+</svg>

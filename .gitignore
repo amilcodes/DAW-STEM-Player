@@ -1,0 +1,7 @@
+.DS_Store
+.build/
+.direct-build*/
+dist/
+Helpers/stem-worker/target/
+outputs/
+*.stemproject/
