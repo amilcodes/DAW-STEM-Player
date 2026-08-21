@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.8.0
+
+- Added a phosphor-green beat monitor inside the existing recessed instrument display.
+- Made quarter beats draw sharp pulse spikes while four compact markers expose the live sixteenth-note phase.
+- Flashed the display edge at every quantization boundary, with a stronger downbeat pulse.
+- Moved visual phase and pad scheduling onto one tested host-clock beat grid so the animation cannot drift from audible hits.
+- Kept the underlying waveform as a dim signal reference while system sync is active.
+
 ## 2.7.0
 
 - Added live system-audio tempo and beat-phase detection for the drum surface.

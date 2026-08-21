@@ -18,14 +18,17 @@ struct WaveformTimeline: View {
                             Text(app.project.title.lowercased())
                                 .font(.instrument(6.5, weight: .medium))
                             Spacer()
-                            HardwareLED(color: .instrumentOrange, isOn: true, size: 3)
+                            HardwareLED(color: app.tempoSync.isLocked ? .instrumentGreen : .instrumentOrange, isOn: true, size: 3)
                         }
                         Spacer()
                         HStack {
-                            Text("insert audio")
+                            Text(app.tempoSync.isEnabled ? app.tempoSync.displayText : "insert audio")
                                 .font(.instrument(7, weight: .regular))
+                                .foregroundStyle(app.tempoSync.isLocked ? Color.instrumentGreen : Color.instrumentRaised.opacity(0.72))
                             Spacer()
-                            Text("44.1 / 32")
+                            Text(app.tempoSync.isLocked
+                                 ? String(format: "%.1f", app.tempoSync.bpm ?? 0)
+                                 : "44.1 / 32")
                                 .font(.instrumentNumber(5.5, weight: .medium))
                                 .foregroundStyle(Color.white.opacity(0.25))
                         }
@@ -61,6 +64,7 @@ struct WaveformTimeline: View {
                     .padding(.horizontal, 5)
                     .padding(.top, 17)
                     .padding(.bottom, 14)
+                    .opacity(app.tempoSync.isEnabled ? 0.14 : 1)
 
                     if app.project.loop.isEnabled {
                         let start = proxy.size.width * app.project.loop.startSeconds / duration
@@ -75,13 +79,18 @@ struct WaveformTimeline: View {
                         .fill(Color.instrumentRaised.opacity(0.82))
                         .frame(width: 0.7, height: 28)
                         .offset(x: max(0, min(proxy.size.width - 1, playheadX)))
+                        .opacity(app.tempoSync.isEnabled ? 0.18 : 1)
 
                     VStack(spacing: 0) {
                         HStack(spacing: 5) {
                             Text(app.project.title.lowercased())
                                 .font(.instrument(6.5, weight: .medium))
                                 .lineLimit(1)
-                            HardwareLED(color: audio.isPlaying ? .instrumentGreen : .instrumentOrange, isOn: true, size: 3)
+                            HardwareLED(
+                                color: app.tempoSync.isLocked ? .instrumentGreen : (audio.isPlaying ? .instrumentGreen : .instrumentOrange),
+                                isOn: true,
+                                size: 3
+                            )
                         Spacer()
                             Text(app.tempoSync.isLocked
                                  ? String(format: "%.1f", app.tempoSync.bpm ?? 0)
@@ -100,6 +109,14 @@ struct WaveformTimeline: View {
                     .foregroundStyle(Color.white.opacity(0.42))
                     .padding(7)
                 }
+
+                if app.tempoSync.isEnabled {
+                    SyncPulseTrace(sync: app.tempoSync)
+                        .padding(.horizontal, 7)
+                        .padding(.top, 18)
+                        .padding(.bottom, 13)
+                        .allowsHitTesting(false)
+                }
             }
             .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 3).stroke(Color.instrumentInk.opacity(0.5), lineWidth: 0.7))
@@ -113,7 +130,11 @@ struct WaveformTimeline: View {
         .frame(height: 60)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Song waveform")
-        .accessibilityValue("Playhead at \(audio.currentTime.transportString)")
+        .accessibilityValue(
+            app.tempoSync.isLocked
+                ? String(format: "System audio locked at %.1f BPM", app.tempoSync.bpm ?? 0)
+                : "Playhead at \(audio.currentTime.transportString)"
+        )
     }
 
 }

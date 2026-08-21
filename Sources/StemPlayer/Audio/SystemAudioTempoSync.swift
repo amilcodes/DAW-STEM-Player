@@ -13,10 +13,18 @@ final class SystemAudioTempoSync: NSObject, ObservableObject, SCStreamOutput, SC
     }
 
     struct ClockSnapshot {
+        var grid: BeatGridClock
+        var confidence: Double
+        var updatedTime: Double
+    }
+
+    struct PhaseSnapshot: Equatable, Sendable {
         var bpm: Double
         var confidence: Double
-        var beatReferenceTime: Double
-        var updatedTime: Double
+        var beatPosition: Double
+        var beatPhase: Double
+        var subdivisionIndex: Int
+        var subdivisionPhase: Double
     }
 
     @Published private(set) var state: State = .idle
@@ -31,6 +39,7 @@ final class SystemAudioTempoSync: NSObject, ObservableObject, SCStreamOutput, SC
     private var clock: ClockSnapshot?
     private var stream: SCStream?
     private var captureGeneration = UUID()
+    private var previewBeatPosition: Double?
 
     var isEnabled: Bool {
         switch state {
@@ -57,6 +66,7 @@ final class SystemAudioTempoSync: NSObject, ObservableObject, SCStreamOutput, SC
         state = .requestingPermission
         bpm = nil
         confidence = 0
+        previewBeatPosition = nil
         resetEstimator()
         setClock(nil)
         let generation = UUID()
@@ -118,6 +128,7 @@ final class SystemAudioTempoSync: NSObject, ObservableObject, SCStreamOutput, SC
         state = .idle
         bpm = nil
         confidence = 0
+        previewBeatPosition = nil
         resetEstimator()
         setClock(nil)
 
@@ -129,10 +140,11 @@ final class SystemAudioTempoSync: NSObject, ObservableObject, SCStreamOutput, SC
         guard subdivision > 0, let snapshot = clockSnapshot(), snapshot.confidence >= 0.16 else { return nil }
         let now = ProcessInfo.processInfo.systemUptime
         guard now - snapshot.updatedTime < 2.5 else { return nil }
-        let stepDuration = 60 / snapshot.bpm / Double(subdivision)
-        let elapsed = now + minimumLeadTime - snapshot.beatReferenceTime
-        let step = ceil(elapsed / stepDuration)
-        let target = snapshot.beatReferenceTime + step * stepDuration
+        let target = snapshot.grid.nextBoundary(
+            after: now,
+            subdivision: subdivision,
+            minimumLeadTime: minimumLeadTime
+        )
         let delay = max(0.003, target - now)
         return mach_absolute_time() + AVAudioTime.hostTime(forSeconds: delay)
     }
@@ -143,10 +155,47 @@ final class SystemAudioTempoSync: NSObject, ObservableObject, SCStreamOutput, SC
         }
         let now = ProcessInfo.processInfo.systemUptime
         guard now - snapshot.updatedTime < 2.5 else { return nil }
-        let beat = (now - snapshot.beatReferenceTime) * snapshot.bpm / 60
-        let quantized = (beat * Double(subdivision)).rounded(.up) / Double(subdivision)
-        let wrapped = quantized.truncatingRemainder(dividingBy: lengthInBeats)
-        return wrapped >= 0 ? wrapped : wrapped + lengthInBeats
+        return snapshot.grid.quantizedBeat(
+            at: now,
+            lengthInBeats: lengthInBeats,
+            subdivision: subdivision
+        )
+    }
+
+    func phaseSnapshot(at time: Double = ProcessInfo.processInfo.systemUptime, subdivision: Int = 4) -> PhaseSnapshot? {
+        guard let snapshot = clockSnapshot(), snapshot.confidence >= 0.16 else { return nil }
+        guard previewBeatPosition != nil || time - snapshot.updatedTime < 2.5 else { return nil }
+        let phase: BeatGridClock.Phase
+        if let previewBeatPosition {
+            let previewClock = BeatGridClock(bpm: snapshot.grid.bpm, beatReferenceTime: 0)
+            phase = previewClock.phase(at: previewBeatPosition * 60 / snapshot.grid.bpm, subdivision: subdivision)
+        } else {
+            phase = snapshot.grid.phase(at: time, subdivision: subdivision)
+        }
+        return PhaseSnapshot(
+            bpm: snapshot.grid.bpm,
+            confidence: snapshot.confidence,
+            beatPosition: phase.beatPosition,
+            beatPhase: phase.beatPhase,
+            subdivisionIndex: phase.subdivisionIndex,
+            subdivisionPhase: phase.subdivisionPhase
+        )
+    }
+
+    func installPreviewClock(bpm: Double, beatPosition: Double) {
+        guard ProcessInfo.processInfo.environment["SP4_RENDERING_PREVIEW"] == "1" else { return }
+        let now = ProcessInfo.processInfo.systemUptime
+        previewBeatPosition = beatPosition
+        self.bpm = bpm
+        confidence = 1
+        state = .locked
+        setClock(
+            ClockSnapshot(
+                grid: BeatGridClock(bpm: bpm, beatReferenceTime: now),
+                confidence: 1,
+                updatedTime: now
+            )
+        )
     }
 
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of outputType: SCStreamOutputType) {
@@ -187,9 +236,8 @@ final class SystemAudioTempoSync: NSObject, ObservableObject, SCStreamOutput, SC
             }
 
             let snapshot = ClockSnapshot(
-                bpm: estimate.bpm,
+                grid: BeatGridClock(bpm: estimate.bpm, beatReferenceTime: estimate.beatReferenceTime),
                 confidence: estimate.confidence,
-                beatReferenceTime: estimate.beatReferenceTime,
                 updatedTime: arrivalTime
             )
             setClock(snapshot)
@@ -278,6 +326,7 @@ final class SystemAudioTempoSync: NSObject, ObservableObject, SCStreamOutput, SC
         }
         stream = nil
         captureGeneration = UUID()
+        previewBeatPosition = nil
         resetEstimator()
         setClock(nil)
         DispatchQueue.main.async { [weak self] in

@@ -57,6 +57,9 @@ struct PreviewRenderer {
         app.selectedStemID = stems[0].id
         app.selectedPadIndex = 1
         app.mode = mode
+        if mode == .pads {
+            app.tempoSync.installPreviewClock(bpm: 104, beatPosition: 12.015)
+        }
         app.waveforms = Dictionary(uniqueKeysWithValues: stems.enumerated().map { index, stem in
             let peaks = (0..<420).map { sample -> Float in
                 let x = Double(sample) / 420

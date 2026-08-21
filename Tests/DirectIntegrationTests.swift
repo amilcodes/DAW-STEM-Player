@@ -39,6 +39,19 @@ struct DirectIntegrationTests {
         precondition(decoded.pads.count == 12)
         precondition(LoopRange(isEnabled: true, startSeconds: 2, endSeconds: 2).duration == 0.05)
         precondition(62.345.transportString == "01:02.344" || 62.345.transportString == "01:02.345")
+
+        let beatGrid = BeatGridClock(bpm: 120, beatReferenceTime: 10)
+        let phase = beatGrid.phase(at: 10.3125, subdivision: 4)
+        precondition(abs(phase.beatPosition - 0.625) < 0.000_001)
+        precondition(abs(phase.beatPhase - 0.625) < 0.000_001)
+        precondition(phase.subdivisionIndex == 2)
+        precondition(abs(phase.subdivisionPhase - 0.5) < 0.000_001)
+        let nextBoundary = beatGrid.nextBoundary(after: 10.26, subdivision: 4)
+        precondition(abs(nextBoundary - 10.375) < 0.000_001)
+        let boundaryPhase = beatGrid.phase(at: nextBoundary, subdivision: 4)
+        precondition(boundaryPhase.subdivisionIndex == 3)
+        precondition(boundaryPhase.subdivisionPhase < 0.000_001)
+        precondition(abs((beatGrid.quantizedBeat(at: 10.26, lengthInBeats: 4, subdivision: 4) ?? 0) - 0.75) < 0.000_001)
     }
 
     private static func testTempoEstimator() {

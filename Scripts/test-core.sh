@@ -23,6 +23,7 @@ xcrun swiftc \
   Sources/StemPlayer/Services/AudioImportService.swift \
   Sources/StemPlayer/Services/MixExporter.swift \
   Sources/StemPlayer/Audio/WaveformAnalyzer.swift \
+  Sources/StemPlayer/Audio/BeatGridClock.swift \
   Sources/StemPlayer/Audio/TempoEstimator.swift \
   Sources/StemPlayer/Audio/DrumSoundFactory.swift \
   Sources/StemPlayer/Audio/AudioEngineController.swift \

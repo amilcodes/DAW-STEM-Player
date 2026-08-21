@@ -54,7 +54,7 @@ Patterns store beats rather than seconds. The app converts the current audio tim
 
 `SystemAudioTempoSync` captures only system audio through ScreenCaptureKit and excludes the current process. It folds captured PCM to mono and passes samples to `TempoEstimator`. No captured audio is stored.
 
-The estimator reduces audio to a 100 Hz onset-strength envelope, correlates candidate periods from 55–200 BPM, resolves half- and double-tempo candidates, smooths stable locks, and finds the strongest phase within the selected period. ScreenCaptureKit presentation timestamps place that phase on the macOS host clock. `AudioEngineController` can therefore schedule a pad node at the next sixteenth-note boundary with `AVAudioTime`, instead of firing after a UI timer.
+The estimator reduces audio to a 100 Hz onset-strength envelope, correlates candidate periods from 55–200 BPM, resolves half- and double-tempo candidates, smooths stable locks, and finds the strongest phase within the selected period. ScreenCaptureKit presentation timestamps place that phase on the macOS host clock. `BeatGridClock` calculates both the live pulse-monitor phase and the next sixteenth-note boundary. `AudioEngineController` can therefore schedule a pad node with `AVAudioTime`, instead of firing after a UI timer, while the screen renders the exact same clock.
 
 An estimate must clear a confidence threshold before it controls the pads. The clock expires when fresh rhythmic evidence disappears. Until lock, pad input remains immediate.
 

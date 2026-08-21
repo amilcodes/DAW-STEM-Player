@@ -97,9 +97,9 @@ The pointer must remain over the pad surface while trackpad mode is active. macO
 
 Move the mode switch to **drum**, start music in another app, then press **sync** or `B`. The first use asks for Screen & System Audio Recording access. Grant it in System Settings and restart Stem Player if macOS requests a restart.
 
-The voice display reads `listening` while it gathers rhythm data. A stable tempo normally locks after four to eight seconds; the display then shows the detected BPM in green. Mouse, keyboard, and simultaneous trackpad hits are scheduled to the next detected sixteenth note. Press **sync** or `B` again for immediate, unquantized pads.
+The voice display reads `listening` while it gathers rhythm data. A stable tempo normally locks after four to eight seconds; the display then shows the detected BPM in green. The main screen becomes a live beat monitor: sharp trace spikes mark quarter beats, four small bars show the current sixteenth, and the right edge flashes at every quantization boundary. Mouse, keyboard, and simultaneous trackpad hits are scheduled to the next one of those boundaries. Press **sync** or `B` again for immediate, unquantized pads.
 
-The detector runs locally. It builds a 100 Hz onset envelope, searches the recent audio for a stable periodic pulse, and tracks beat phase against the macOS host clock. It needs no model weights, account, network request, or stem separation. Stem Player excludes its own output from capture so drum hits do not teach the detector the wrong pulse.
+The detector runs locally. It builds a 100 Hz onset envelope, searches the recent audio for a stable periodic pulse, and tracks beat phase against the macOS host clock. The pulse monitor and audio scheduler read the same beat-grid clock, so the screen is a timing display rather than an independent animation. It needs no model weights, account, network request, or stem separation. Stem Player excludes its own output from capture so drum hits do not teach the detector the wrong pulse.
 
 Very loose, ambient, changing-tempo, or beatless material may stay in `listening`. Bluetooth output adds latency after scheduling; built-in speakers, wired headphones, or an audio interface feel tighter.
 
